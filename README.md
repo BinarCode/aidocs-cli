@@ -76,8 +76,6 @@ Show version information.
 
 After running `aidocs init`, these commands are available in Claude Code:
 
-### Basic Commands
-
 | Command | Description | Requires Playwright |
 |---------|-------------|---------------------|
 | `/docs:init` | Configure project settings, credentials, output style | No |
@@ -85,11 +83,6 @@ After running `aidocs init`, these commands are available in Claude Code:
 | `/docs:analyze <route>` | Analyze codebase for a route (no browser) | No |
 | `/docs:batch` | Generate docs for multiple pages | Yes |
 | `/docs:update` | Update docs based on git diff | Optional |
-
-### Intelligent Commands (NEW)
-
-| Command | Description | Requires Playwright |
-|---------|-------------|---------------------|
 | `/docs:discover <module>` | Deep analysis of a module's code structure | No |
 | `/docs:explore <module>` | Interactive UI exploration with Playwright | Yes |
 | `/docs:flow <entity>` | Document complete entity lifecycle (CRUD) | Yes |
