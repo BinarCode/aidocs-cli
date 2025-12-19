@@ -2,14 +2,16 @@
 
 AI-powered documentation generator for web applications. Install docs commands into your Claude Code project.
 
+Uses Playwright MCP for browser automation and Claude's vision capabilities for page analysis.
+
 ## Installation
 
 ```bash
-# Install globally with uv
-uv tool install aidocs-cli --from git+https://github.com/binarcode/aidocs-cli.git
-
-# Or install from PyPI (when published)
+# Install from PyPI
 uv tool install aidocs-cli
+
+# Or install from GitHub
+uv tool install aidocs-cli --from git+https://github.com/binarcode/aidocs-cli.git
 
 # Or use pipx
 pipx install aidocs-cli
@@ -21,42 +23,42 @@ pipx install aidocs-cli
 # Initialize in current directory
 aidocs init .
 
-# Or create a new project
-aidocs init my-project
-
 # Check your environment
 aidocs check
 ```
 
-## Commands
+Then in Claude Code:
+
+```bash
+# Configure your project
+/docs:init
+
+# Generate docs for a page
+/docs:generate https://myapp.com/dashboard
+
+# Update docs after code changes
+/docs:update --base main
+```
+
+## CLI Commands
 
 ### `aidocs init [PROJECT_NAME]`
 
 Initialize the docs module in a project.
 
 ```bash
-# Current directory
-aidocs init .
-
-# New directory
-aidocs init my-project
-
-# Force overwrite existing files
-aidocs init . --force
-
-# Use with Cursor instead of Claude
-aidocs init . --ai cursor
+aidocs init .                  # Current directory
+aidocs init my-project         # New directory
+aidocs init . --force          # Overwrite existing
+aidocs init . --ai cursor      # Use with Cursor
 ```
 
 **Options:**
-- `--ai` - AI assistant to configure for (`claude`, `cursor`, `copilot`). Default: `claude`
-- `--force, -f` - Overwrite existing files
-- `--no-git` - Skip git initialization
-
-**What it does:**
-1. Creates `.claude/commands/docs/` with slash command definitions
-2. Creates `docs-workflows/` with workflow implementations
-3. Updates `.gitignore` to exclude `.docs-auth`
+| Option | Description |
+|--------|-------------|
+| `--ai` | AI assistant: `claude`, `cursor`, `copilot` (default: `claude`) |
+| `--force, -f` | Overwrite existing files |
+| `--no-git` | Skip git initialization |
 
 ### `aidocs check`
 
@@ -66,38 +68,125 @@ Check for required tools and dependencies.
 aidocs check
 ```
 
-**Checks for:**
-- Git
-- Claude Code CLI
-- Python 3.11+
-- uv
-- npx (for Playwright MCP)
-
 ### `aidocs version`
 
 Show version information.
 
+## Slash Commands
+
+After running `aidocs init`, these commands are available in Claude Code:
+
+| Command | Description | Requires Playwright |
+|---------|-------------|---------------------|
+| `/docs:init` | Configure project settings, credentials, output style | No |
+| `/docs:generate <url>` | Generate docs for a single page with screenshots | Yes |
+| `/docs:analyze <route>` | Analyze codebase for a route (no browser) | No |
+| `/docs:batch` | Generate docs for multiple pages | Yes |
+| `/docs:update` | Update docs based on git diff | Optional |
+
+### `/docs:init`
+
+Interactive setup wizard that:
+- Detects your tech stack (Laravel, Vue, React, Next.js, etc.)
+- Asks for project name, audience, and documentation tone
+- Configures authentication method (file, env vars, or manual)
+- Sets output directory and screenshot preferences
+
+### `/docs:generate <url>`
+
+Generate documentation for a single page:
+
 ```bash
-aidocs version
+/docs:generate https://myapp.com/campaigns
+/docs:generate /campaigns                      # Uses base URL from config
+/docs:generate /settings --auth user:pass      # With authentication
 ```
 
-## After Installation
+**Features:**
+- Captures full-page screenshots
+- Analyzes UI elements visually
+- Searches codebase for related code
+- Detects forms, buttons, and interactive elements
+- Offers to document user flows step-by-step
 
-Once installed, use these Claude Code slash commands:
+### `/docs:update`
+
+Update existing documentation based on code changes:
 
 ```bash
-# Initialize your project settings
-/docs:init
+/docs:update                    # Compare against main
+/docs:update --base staging     # Compare against staging branch
+/docs:update --dry-run          # Preview changes without applying
+/docs:update --screenshots      # Also refresh screenshots
+```
 
-# Generate documentation for a page
-/docs:generate https://myapp.com/dashboard
+**What it does:**
+1. Gets git diff between current branch and base
+2. Analyzes changed frontend/backend files
+3. Maps code changes to affected features
+4. Finds and updates related documentation
+5. Optionally refreshes screenshots
+6. Offers to stage/commit doc changes
 
-# Analyze code without browser
+**Perfect for:** Running before creating a PR to ensure docs stay in sync with code.
+
+### `/docs:analyze <route>`
+
+Analyze codebase without browser automation:
+
+```bash
 /docs:analyze /campaigns
-
-# Batch generate for multiple pages
-/docs:batch --discover
+/docs:analyze /api/users
 ```
+
+### `/docs:batch`
+
+Generate documentation for multiple pages:
+
+```bash
+/docs:batch urls.txt                           # From file
+/docs:batch --discover --base-url https://myapp.com  # Auto-discover routes
+```
+
+## Configuration
+
+After running `/docs:init`, a `docs-config.yaml` is created:
+
+```yaml
+project:
+  name: "My App"
+  type: saas
+
+style:
+  tone: friendly  # friendly | professional | technical | minimal
+
+urls:
+  base: "https://myapp.com"
+
+auth:
+  method: file    # file | env | manual
+
+output:
+  directory: ./docs
+```
+
+### Authentication Methods
+
+| Method | Description |
+|--------|-------------|
+| `file` | Credentials stored in `.docs-auth` (gitignored) |
+| `env` | Read from `DOCS_AUTH_USER` and `DOCS_AUTH_PASS` |
+| `manual` | Pass `--auth user:pass` each time |
+
+## Output
+
+Generated documentation includes:
+- **Overview** - What the page is for
+- **Features** - What users can do
+- **Key Actions** - Buttons and actions explained
+- **Screenshots** - Full-page captures
+- **How-to Guides** - Step-by-step flows (optional)
+- **Related Pages** - Navigation links
 
 ## Requirements
 
@@ -123,16 +212,10 @@ Add to your `~/.claude.json` or project `.mcp.json`:
 ## Development
 
 ```bash
-# Clone the repository
 git clone https://github.com/binarcode/aidocs-cli.git
 cd aidocs-cli
-
-# Install in development mode
-uv pip install -e .
-
-# Run commands
+uv venv && uv pip install -e .
 aidocs check
-aidocs init test-project
 ```
 
 ## License
