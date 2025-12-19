@@ -76,6 +76,8 @@ Show version information.
 
 After running `aidocs init`, these commands are available in Claude Code:
 
+### Basic Commands
+
 | Command | Description | Requires Playwright |
 |---------|-------------|---------------------|
 | `/docs:init` | Configure project settings, credentials, output style | No |
@@ -83,6 +85,14 @@ After running `aidocs init`, these commands are available in Claude Code:
 | `/docs:analyze <route>` | Analyze codebase for a route (no browser) | No |
 | `/docs:batch` | Generate docs for multiple pages | Yes |
 | `/docs:update` | Update docs based on git diff | Optional |
+
+### Intelligent Commands (NEW)
+
+| Command | Description | Requires Playwright |
+|---------|-------------|---------------------|
+| `/docs:discover <module>` | Deep analysis of a module's code structure | No |
+| `/docs:explore <module>` | Interactive UI exploration with Playwright | Yes |
+| `/docs:flow <entity>` | Document complete entity lifecycle (CRUD) | Yes |
 
 ### `/docs:init`
 
@@ -147,6 +157,81 @@ Generate documentation for multiple pages:
 /docs:batch urls.txt                           # From file
 /docs:batch --discover --base-url https://myapp.com  # Auto-discover routes
 ```
+
+### `/docs:discover <module>`
+
+Build a knowledge graph for a specific module:
+
+```bash
+/docs:discover --list              # List all detectable modules
+/docs:discover campaigns           # Analyze campaigns module
+/docs:discover users --deep        # Include relationship analysis
+/docs:discover orders --with-flows # Detect user flows
+```
+
+**Creates `.docs-knowledge/modules/{module}/` with:**
+- `entity.json` - Fields, types, relationships
+- `routes.json` - API endpoints and validation
+- `components.json` - UI components and props
+- `validation.json` - Validation rules from code
+- `ui-states/` - Conditional UI behaviors
+- `flows/` - Detected user flows
+
+### `/docs:explore <module>`
+
+Interactively explore a module's UI with Playwright:
+
+```bash
+/docs:explore campaigns                    # Explore all campaign pages
+/docs:explore users --page /users/create   # Specific page
+/docs:explore orders --depth deep          # Thorough exploration
+```
+
+**What it discovers:**
+- Conditional fields (checkbox reveals more inputs)
+- Validation messages (tries invalid data)
+- UI state changes (what happens when you click)
+- Cross-page effects (create here → appears there)
+
+### `/docs:flow <entity>`
+
+Document a complete entity lifecycle:
+
+```bash
+/docs:flow campaign                        # Smart flow detection
+/docs:flow campaign --lifecycle            # Full CRUD documentation
+/docs:flow "user registration"             # Custom flow description
+/docs:flow order --include-errors          # Include error states
+```
+
+**Produces step-by-step guides with:**
+- Screenshots at each step
+- Data flow tracking
+- Validation documentation
+- Error state handling
+- Related pages
+
+## Knowledge Base
+
+The intelligent commands build a `.docs-knowledge/` folder:
+
+```
+.docs-knowledge/
+├── _meta/                    # Project info
+├── modules/
+│   ├── campaigns/
+│   │   ├── entity.json       # Entity definition
+│   │   ├── routes.json       # API routes
+│   │   ├── validation.json   # Validation rules
+│   │   ├── flows/            # User flows
+│   │   └── ui-states/        # Conditional UI
+│   └── users/
+│       └── ...
+├── relationships/            # Cross-module relationships
+└── cross-module-flows/       # Flows spanning modules
+```
+
+This knowledge powers smarter documentation generation.
 
 ## Configuration
 
