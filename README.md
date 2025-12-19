@@ -233,6 +233,48 @@ The intelligent commands build a `.docs-knowledge/` folder:
 
 This knowledge powers smarter documentation generation.
 
+## Intelligent Workflow
+
+The recommended flow for comprehensive documentation:
+
+```
+/docs:discover campaigns     → Analyzes code, builds knowledge graph
+         ↓
+/docs:explore campaigns      → Playwright explores UI, finds behaviors
+         ↓
+/docs:flow campaign          → Documents complete lifecycle with screenshots
+```
+
+### Example Session
+
+```bash
+# 1. List all detectable modules
+/docs:discover --list
+
+# 2. Analyze the campaigns module deeply
+/docs:discover campaigns --deep --with-flows
+
+# 3. Explore UI to discover conditional fields & validation
+/docs:explore campaigns
+
+# 4. Generate full lifecycle documentation
+/docs:flow campaign --lifecycle --include-errors
+
+# 5. Update docs after code changes
+/docs:update --base main
+```
+
+### What Makes It Smart
+
+| Capability | How It Works |
+|------------|--------------|
+| **Conditional UI** | Clicks checkboxes/toggles, observes what fields appear |
+| **Validation Discovery** | Submits empty/invalid forms, captures error messages |
+| **Cross-Page Tracking** | Creates data, verifies it appears in lists/dashboards |
+| **Entity Lifecycle** | Documents full create → view → edit → delete flow |
+| **Modular Analysis** | One module at a time, scales to large projects |
+| **Code + UI Correlation** | Matches frontend components to backend validation |
+
 ## Configuration
 
 After running `/docs:init`, a `docs-config.yaml` is created:
