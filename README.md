@@ -157,8 +157,14 @@ Show version information.
 Update aidocs-cli to the latest version.
 
 ```bash
-aidocs update
+aidocs update              # Update from PyPI
+aidocs update --github     # Update from GitHub (latest)
 ```
+
+**Options:**
+| Option | Description |
+|--------|-------------|
+| `--github` | Install latest from GitHub instead of PyPI |
 
 Automatically detects and uses the appropriate package manager (uv, pipx, or pip).
 
