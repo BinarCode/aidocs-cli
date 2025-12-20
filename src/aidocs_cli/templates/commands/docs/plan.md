@@ -15,7 +15,7 @@ Create an ordered documentation plan based on discovered modules. Run after `/do
 ```
 
 **What it does:**
-1. Reads discovered modules from `.docs-knowledge/`
+1. Reads discovered modules from `docs/.knowledge/`
 2. Analyzes dependencies and relationships
 3. Suggests documentation order (core modules first)
 4. Creates `docs-plan.yaml` with the plan

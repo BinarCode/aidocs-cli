@@ -18,11 +18,11 @@ Scan your codebase to discover all modules/entities. Run this after `/docs:init`
 1. Scans backend for models, controllers, routes
 2. Scans frontend for pages, components
 3. Identifies relationships between modules
-4. Saves analysis to `.docs-knowledge/`
+4. Saves analysis to `docs/.knowledge/`
 
 **Output:**
 ```
-.docs-knowledge/
+docs/.knowledge/
 ├── _meta/
 │   ├── project.json
 │   └── modules-index.json      # List of all discovered modules
@@ -43,7 +43,7 @@ Scan your codebase to discover all modules/entities. Run this after `/docs:init`
 
 **Knowledge Base Structure:**
 ```
-.docs-knowledge/
+docs/.knowledge/
 ├── _meta/
 │   ├── project.json              # Project-level info
 │   ├── stack.json                # Tech stack details

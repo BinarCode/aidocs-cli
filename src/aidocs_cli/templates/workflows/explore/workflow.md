@@ -37,7 +37,7 @@ Please specify a module to explore:
 
 ## STEP 1: LOAD MODULE KNOWLEDGE
 
-Check if `.docs-knowledge/modules/{module}/` exists:
+Check if `docs/.knowledge/modules/{module}/` exists:
 - If yes: Load entity.json, components.json, routes.json
 - If no: Suggest running `/docs:discover {module}` first
 
@@ -243,7 +243,7 @@ After deleting campaign:
 
 ## STEP 4: SAVE EXPLORATION RESULTS
 
-Update `.docs-knowledge/modules/{module}/`:
+Update `docs/.knowledge/modules/{module}/`:
 
 ### interactions.json
 ```json
@@ -325,7 +325,7 @@ Update `.docs-knowledge/modules/{module}/`:
    Cross-page effects: 8
 
 📸 Screenshots captured: 15
-   Saved to: .docs-knowledge/modules/{module}/screenshots/
+   Saved to: docs/.knowledge/modules/{module}/screenshots/
 
 📁 Files updated:
    • modules/{module}/interactions.json

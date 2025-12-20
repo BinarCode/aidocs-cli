@@ -26,7 +26,7 @@ Use Playwright to systematically explore your application, discovering UI behavi
 6. Maps conditional UI (what appears when you click a checkbox)
 7. Records API calls made during interactions
 
-**Output:** Updates `.docs-knowledge/` with:
+**Output:** Updates `docs/.knowledge/` with:
 - `ui-states.json` - UI state machine for each page
 - `interactions.json` - What happens when you click/fill each element
 - `validation-messages.json` - Actual validation messages from the UI

@@ -86,9 +86,9 @@ To analyze a module:
 
 ### If module provided:
 
-Create `.docs-knowledge/` structure if not exists:
+Create `docs/.knowledge/` structure if not exists:
 ```
-.docs-knowledge/
+docs/.knowledge/
 ├── _meta/
 ├── modules/
 ├── relationships/
@@ -158,7 +158,7 @@ find pages -name "*.tsx" -o -name "*.jsx"
 
 ### 2.3 Create Module Index
 
-Create `.docs-knowledge/_meta/modules-index.json`:
+Create `docs/.knowledge/_meta/modules-index.json`:
 ```json
 {
   "discovered_at": "2024-01-15T10:30:00Z",
@@ -602,7 +602,7 @@ Create `cross-module-flows/{flow-name}.json`:
 
 ## STEP 6: GENERATE SUMMARY
 
-Create `.docs-knowledge/_meta/project.json`:
+Create `docs/.knowledge/_meta/project.json`:
 ```json
 {
   "analyzed_at": "2024-01-15T10:30:00Z",
@@ -633,7 +633,7 @@ Create `.docs-knowledge/_meta/project.json`:
    Relationships found: 23
    Cross-module flows: 5
 
-📁 Knowledge base created: .docs-knowledge/
+📁 Knowledge base created: docs/.knowledge/
    ├── _meta/          (project & stack info)
    ├── modules/        (12 module folders)
    ├── relationships/  (23 relationship files)
@@ -668,4 +668,4 @@ Create `.docs-knowledge/_meta/project.json`:
 - Run `/docs:discover` once at project setup, then incrementally with `--module`
 - Review `_meta/warnings.json` for issues needing attention
 - Knowledge base is used by `/docs:generate`, `/docs:flow`, `/docs:explore`
-- Commit `.docs-knowledge/` to share with team
+- Commit `docs/.knowledge/` to share with team

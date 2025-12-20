@@ -258,9 +258,9 @@ Scan your codebase to discover all modules and their structure:
 - Frontend: Pages, components, forms, state management
 - Relationships: Foreign keys, ORM relationships, cross-module navigation
 
-**Creates `.docs-knowledge/` with:**
+**Creates `docs/.knowledge/` with:**
 ```
-.docs-knowledge/
+docs/.knowledge/
 ├── _meta/
 │   ├── project.json              # Project-level info
 │   └── modules-index.json        # List of discovered modules
@@ -288,7 +288,7 @@ Create an ordered documentation plan based on discovered modules:
 ```
 
 **What it does:**
-1. Reads discovered modules from `.docs-knowledge/`
+1. Reads discovered modules from `docs/.knowledge/`
 2. Analyzes dependencies and relationships
 3. Suggests documentation order (core modules first)
 4. Creates `docs-plan.yaml` with the plan
@@ -403,10 +403,10 @@ Document a complete entity lifecycle. **Auto-runs discover and explore if needed
 
 ## Knowledge Base
 
-The intelligent commands build a `.docs-knowledge/` folder:
+The intelligent commands build a `docs/.knowledge/` folder:
 
 ```
-.docs-knowledge/
+docs/.knowledge/
 ├── _meta/                    # Project info
 ├── modules/
 │   ├── campaigns/

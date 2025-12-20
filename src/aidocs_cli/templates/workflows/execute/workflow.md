@@ -97,10 +97,10 @@ For each module in plan, verify knowledge exists:
 ```
 📁 Verifying knowledge base...
 
-✓ users         - .docs-knowledge/modules/users/
-✓ campaigns     - .docs-knowledge/modules/campaigns/
-✓ orders        - .docs-knowledge/modules/orders/
-✓ payments      - .docs-knowledge/modules/payments/
+✓ users         - docs/.knowledge/modules/users/
+✓ campaigns     - docs/.knowledge/modules/campaigns/
+✓ orders        - docs/.knowledge/modules/orders/
+✓ payments      - docs/.knowledge/modules/payments/
 
 All modules have discovery data.
 ```
@@ -162,7 +162,7 @@ For each module in priority order:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 Priority: 1 (Core module)
-Knowledge: .docs-knowledge/modules/users/
+Knowledge: docs/.knowledge/modules/users/
 Output: docs/users/
 
 Starting documentation...

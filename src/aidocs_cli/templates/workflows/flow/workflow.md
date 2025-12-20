@@ -40,7 +40,7 @@ Examples:
 
 ### 1.1 Check Knowledge Base
 
-Check if `.docs-knowledge/modules/{entity}/` exists:
+Check if `docs/.knowledge/modules/{entity}/` exists:
 
 ```
 🔍 Checking knowledge base for: campaign
@@ -64,7 +64,7 @@ Running: /docs:discover campaign --deep
 ✓ Validation rules: 8 rules extracted
 ✓ Components: CampaignForm, CampaignList, CampaignDetail
 
-Knowledge saved to: .docs-knowledge/modules/campaigns/
+Knowledge saved to: docs/.knowledge/modules/campaigns/
 ```
 
 ### 1.3 Auto-Run Explore (if missing or outdated)
@@ -81,7 +81,7 @@ Running: /docs:explore campaign
 ✓ Validation messages captured: 8
 ✓ Cross-page effects mapped: 5
 
-Exploration saved to: .docs-knowledge/modules/campaigns/ui-states/
+Exploration saved to: docs/.knowledge/modules/campaigns/ui-states/
 ```
 
 ### 1.4 Proceed to Flow Documentation
@@ -104,7 +104,7 @@ Ready to document flow.
 
 ### If entity name provided:
 
-Load knowledge from `.docs-knowledge/modules/{entity}/`
+Load knowledge from `docs/.knowledge/modules/{entity}/`
 
 **Detect available flows:**
 ```
@@ -492,7 +492,7 @@ Contact your administrator to request campaign management permissions.
 
 ## STEP 6: UPDATE KNOWLEDGE BASE
 
-Save flow to `.docs-knowledge/modules/{entity}/flows/`:
+Save flow to `docs/.knowledge/modules/{entity}/flows/`:
 
 ### lifecycle.json
 ```json
@@ -545,7 +545,7 @@ Save flow to `.docs-knowledge/modules/{entity}/flows/`:
    • docs/images/campaign-flow-step-*.png (12 images)
 
 📁 Knowledge updated:
-   • .docs-knowledge/modules/campaigns/flows/lifecycle.json
+   • docs/.knowledge/modules/campaigns/flows/lifecycle.json
 
 💡 Suggestions:
    • Run /docs:flow campaign-approval for the approval flow

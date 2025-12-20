@@ -9,7 +9,7 @@ description: Create an ordered documentation plan based on discovered modules
 
 **Your Role:** You are a documentation architect. You will analyze the knowledge base, identify dependencies, and create an optimal documentation order.
 
-**Requires:** `.docs-knowledge/` from `/docs:discover`
+**Requires:** `docs/.knowledge/` from `/docs:discover`
 
 ---
 
@@ -33,12 +33,12 @@ Examples:
 
 ### 1.1 Verify Discovery Completed
 
-Check if `.docs-knowledge/` exists and has module data:
+Check if `docs/.knowledge/` exists and has module data:
 
 ```
 🔍 Checking knowledge base...
 
-□ Discovery data    → Looking for .docs-knowledge/
+□ Discovery data    → Looking for docs/.knowledge/
 ```
 
 If not found:
@@ -50,7 +50,7 @@ Run `/docs:discover` first to scan your codebase.
 
 ### 1.2 Load Module Index
 
-Read `.docs-knowledge/_meta/modules-index.json`:
+Read `docs/.knowledge/_meta/modules-index.json`:
 
 ```
 ✓ Discovery data found
@@ -239,7 +239,7 @@ modules:
   - name: users
     priority: 1
     reason: "Core module - other modules depend on it"
-    knowledge_path: ".docs-knowledge/modules/users/"
+    knowledge_path: "docs/.knowledge/modules/users/"
     document:
       lifecycle: true
       include_errors: true
@@ -254,7 +254,7 @@ modules:
   - name: campaigns
     priority: 2
     reason: "Primary feature module with custom flows"
-    knowledge_path: ".docs-knowledge/modules/campaigns/"
+    knowledge_path: "docs/.knowledge/modules/campaigns/"
     document:
       lifecycle: true
       include_errors: true
@@ -273,7 +273,7 @@ modules:
   - name: orders
     priority: 3
     reason: "Depends on users and products"
-    knowledge_path: ".docs-knowledge/modules/orders/"
+    knowledge_path: "docs/.knowledge/modules/orders/"
     document:
       lifecycle: true
       include_errors: true
@@ -288,7 +288,7 @@ modules:
   - name: payments
     priority: 4
     reason: "Depends on orders"
-    knowledge_path: ".docs-knowledge/modules/payments/"
+    knowledge_path: "docs/.knowledge/modules/payments/"
     document:
       lifecycle: true
       include_errors: true
