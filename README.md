@@ -66,7 +66,7 @@ aidocs init .
                                       │
                                       ▼
 ┌──────────────────────────────────────────────────────────────────────────────┐
-│                         DOCUMENT A MODULE                                    │
+│                    OPTION A: Document Single Module                          │
 ├──────────────────────────────────────────────────────────────────────────────┤
 │                                                                              │
 │  /docs:flow campaign                ← Just run this one command!             │
@@ -74,6 +74,22 @@ aidocs init .
 │           ├──→ Auto-runs /docs:discover campaign (analyzes code)             │
 │           ├──→ Auto-runs /docs:explore campaign (tests UI)                   │
 │           └──→ Generates full lifecycle docs with screenshots                │
+│                                                                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+                                      │
+                                      ▼
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                    OPTION B: Document Entire Project                         │
+├──────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  /docs:discover                     Scan codebase, find all modules          │
+│           │                                                                  │
+│           ▼                                                                  │
+│  /docs:plan                         Create ordered documentation plan        │
+│           │                         → Outputs docs-plan.yaml                 │
+│           ▼                                                                  │
+│  /docs:execute                      Run through plan, generate all docs      │
+│                                     → Resume with --continue if interrupted  │
 │                                                                              │
 └──────────────────────────────────────────────────────────────────────────────┘
                                       │
@@ -96,6 +112,9 @@ aidocs init .
 
 # Smart: Full module documentation (auto-discovers and explores)
 /docs:flow campaign
+
+# Batch: Document entire project
+/docs:discover && /docs:plan && /docs:execute
 
 # Maintain: Update after code changes
 /docs:update --base main
@@ -144,7 +163,9 @@ After running `aidocs init`, these commands are available in Claude Code:
 | `/docs:analyze <route>` | Analyze codebase for a route (no browser) | No |
 | `/docs:batch` | Generate docs for multiple pages | Yes |
 | `/docs:update` | Update docs based on git diff | Optional |
-| `/docs:discover <module>` | Deep analysis of a module's code structure | No |
+| `/docs:discover` | Scan codebase, discover all modules | No |
+| `/docs:plan` | Create ordered documentation plan | No |
+| `/docs:execute` | Execute plan, generate all docs | Yes |
 | `/docs:explore <module>` | Interactive UI exploration with Playwright | Yes |
 | `/docs:flow <entity>` | Document complete entity lifecycle (CRUD) | Yes |
 
@@ -212,24 +233,122 @@ Generate documentation for multiple pages:
 /docs:batch --discover --base-url https://myapp.com  # Auto-discover routes
 ```
 
-### `/docs:discover <module>`
+### `/docs:discover`
 
-Build a knowledge graph for a specific module:
+Scan your codebase to discover all modules and their structure:
 
 ```bash
-/docs:discover --list              # List all detectable modules
-/docs:discover campaigns           # Analyze campaigns module
-/docs:discover users --deep        # Include relationship analysis
-/docs:discover orders --with-flows # Detect user flows
+/docs:discover                     # Discover all modules
+/docs:discover --dry               # Preview without saving
+/docs:discover campaigns           # Analyze only one module
 ```
 
-**Creates `.docs-knowledge/modules/{module}/` with:**
-- `entity.json` - Fields, types, relationships
-- `routes.json` - API endpoints and validation
-- `components.json` - UI components and props
-- `validation.json` - Validation rules from code
-- `ui-states/` - Conditional UI behaviors
-- `flows/` - Detected user flows
+**What it analyzes:**
+- Backend: Models, controllers, routes, validation rules
+- Frontend: Pages, components, forms, state management
+- Relationships: Foreign keys, ORM relationships, cross-module navigation
+
+**Creates `.docs-knowledge/` with:**
+```
+.docs-knowledge/
+├── _meta/
+│   ├── project.json              # Project-level info
+│   └── modules-index.json        # List of discovered modules
+├── modules/
+│   ├── campaigns/
+│   │   ├── entity.json           # Fields, types, relationships
+│   │   ├── routes.json           # API endpoints
+│   │   ├── components.json       # UI components
+│   │   └── validation.json       # Validation rules
+│   └── users/
+│       └── ...
+└── relationships/                # Cross-module relationships
+```
+
+**Next step:** Run `/docs:plan` to create documentation plan
+
+### `/docs:plan`
+
+Create an ordered documentation plan based on discovered modules:
+
+```bash
+/docs:plan                         # Create plan interactively
+/docs:plan --auto                  # Auto-generate plan (no prompts)
+/docs:plan --show                  # Show existing plan
+```
+
+**What it does:**
+1. Reads discovered modules from `.docs-knowledge/`
+2. Analyzes dependencies and relationships
+3. Suggests documentation order (core modules first)
+4. Creates `docs-plan.yaml` with the plan
+
+**Output: `docs-plan.yaml`**
+```yaml
+modules:
+  - name: users
+    priority: 1
+    reason: "Core module - other modules depend on it"
+    document:
+      lifecycle: true
+      include_errors: true
+    status: pending
+
+  - name: campaigns
+    priority: 2
+    document:
+      lifecycle: true
+      flows:
+        - "duplicate campaign"
+    status: pending
+
+cross_module_flows:
+  - name: "user registration to first campaign"
+    modules: [users, campaigns]
+    status: pending
+```
+
+**Next step:** Run `/docs:execute` to generate documentation
+
+### `/docs:execute`
+
+Execute the documentation plan and generate all docs:
+
+```bash
+/docs:execute                      # Execute full plan
+/docs:execute --module campaigns   # Execute only one module
+/docs:execute --continue           # Continue from where it stopped
+/docs:execute --dry                # Preview what would be generated
+```
+
+**What it does:**
+1. Reads `docs-plan.yaml`
+2. For each module in order:
+   - Runs explore (if needed)
+   - Generates lifecycle documentation
+   - Captures screenshots
+   - Writes to `docs/{module}/`
+3. Updates plan status as it progresses
+4. Generates cross-module flows last
+
+**Output structure:**
+```
+docs/
+├── index.md                    # Auto-generated with links
+├── users/
+│   ├── index.md               # Module overview
+│   ├── lifecycle.md           # CRUD documentation
+│   └── images/
+├── campaigns/
+│   ├── index.md
+│   ├── lifecycle.md
+│   ├── duplicate-campaign.md  # Custom flow
+│   └── images/
+└── flows/
+    └── user-registration-to-campaign.md
+```
+
+**Resume support:** If execution stops, run `/docs:execute --continue` to resume
 
 ### `/docs:explore <module>`
 
@@ -296,32 +415,37 @@ This knowledge powers smarter documentation generation.
 
 ## Intelligent Workflow
 
-The recommended flow for comprehensive documentation:
+### For Single Module (Quick)
 
 ```
-/docs:discover campaigns     → Analyzes code, builds knowledge graph
+/docs:flow campaign          → Auto-discovers, explores, and documents
+```
+
+### For Entire Project (Batch)
+
+```
+/docs:discover               → Scans codebase, finds all modules
          ↓
-/docs:explore campaigns      → Playwright explores UI, finds behaviors
+/docs:plan                   → Creates ordered documentation plan
          ↓
-/docs:flow campaign          → Documents complete lifecycle with screenshots
+/docs:execute                → Generates all docs with screenshots
 ```
 
 ### Example Session
 
 ```bash
-# 1. List all detectable modules
-/docs:discover --list
+# Option A: Document one module
+/docs:flow campaign                        # Full lifecycle docs
 
-# 2. Analyze the campaigns module deeply
-/docs:discover campaigns --deep --with-flows
+# Option B: Document entire project
+/docs:discover                             # Find all modules
+/docs:plan                                 # Create plan (docs-plan.yaml)
+/docs:execute                              # Generate all documentation
 
-# 3. Explore UI to discover conditional fields & validation
-/docs:explore campaigns
+# Resume if interrupted
+/docs:execute --continue
 
-# 4. Generate full lifecycle documentation
-/docs:flow campaign --lifecycle --include-errors
-
-# 5. Update docs after code changes
+# After code changes
 /docs:update --base main
 ```
 

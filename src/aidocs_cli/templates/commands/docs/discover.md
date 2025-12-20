@@ -1,27 +1,45 @@
 ---
 name: docs:discover
-description: Incremental analysis of a specific module/entity to build knowledge graph
+description: Scan codebase to discover all modules and their structure
 ---
 
-# Discover Module Structure
+# Discover All Modules
 
-Analyze a specific module or entity to understand its routes, components, validation rules, and relationships. Works incrementally - one module at a time for large projects.
+Scan your codebase to discover all modules/entities. Run this after `/docs:init`.
 
 **Usage:**
 ```
-/docs:discover <module>            # Required: specify which module
-/docs:discover campaigns           # Analyze campaigns module
-/docs:discover users --deep        # Deep analysis with relationships
-/docs:discover orders --with-flows # Include flow detection
-/docs:discover --list              # List detected modules (quick scan)
+/docs:discover                     # Discover all modules
+/docs:discover --dry               # Preview without saving
+/docs:discover campaigns           # Analyze only one module
 ```
 
-**Arguments:**
-- `<module>` - Required module/entity name to analyze
-- `--deep` - Include relationship analysis with other modules
-- `--with-flows` - Detect and document user flows
-- `--list` - Quick scan to list all detectable modules
-- `--refresh` - Re-analyze and overwrite existing knowledge
+**What it does:**
+1. Scans backend for models, controllers, routes
+2. Scans frontend for pages, components
+3. Identifies relationships between modules
+4. Saves analysis to `.docs-knowledge/`
+
+**Output:**
+```
+.docs-knowledge/
+├── _meta/
+│   ├── project.json
+│   └── modules-index.json      # List of all discovered modules
+└── modules/
+    ├── campaigns/
+    │   ├── entity.json
+    │   ├── routes.json
+    │   └── components.json
+    ├── users/
+    └── orders/
+```
+
+**Next step:** Run `/docs:plan` to create documentation plan
+
+---
+
+**Execute workflow:** `@docs-workflows/discover/workflow.md`
 
 **Knowledge Base Structure:**
 ```
