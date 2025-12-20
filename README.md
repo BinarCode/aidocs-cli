@@ -69,13 +69,11 @@ aidocs init .
 │                         DOCUMENT A MODULE                                    │
 ├──────────────────────────────────────────────────────────────────────────────┤
 │                                                                              │
-│  /docs:discover campaigns           Analyze code: models, routes, validation │
+│  /docs:flow campaign --lifecycle    ← Just run this one command!             │
 │           │                                                                  │
-│           ▼                                                                  │
-│  /docs:explore campaigns            Test UI: click buttons, fill forms       │
-│           │                                                                  │
-│           ▼                                                                  │
-│  /docs:flow campaign --lifecycle    Generate: create → view → edit → delete  │
+│           ├──→ Auto-runs /docs:discover campaign (analyzes code)             │
+│           ├──→ Auto-runs /docs:explore campaign (tests UI)                   │
+│           └──→ Generates full lifecycle docs with screenshots                │
 │                                                                              │
 └──────────────────────────────────────────────────────────────────────────────┘
                                       │
@@ -96,8 +94,8 @@ aidocs init .
 # Simple: Generate docs for one page
 /docs:generate https://myapp.com/dashboard
 
-# Smart: Full module documentation
-/docs:discover campaigns && /docs:explore campaigns && /docs:flow campaign
+# Smart: Full module documentation (auto-discovers and explores)
+/docs:flow campaign --lifecycle
 
 # Maintain: Update after code changes
 /docs:update --base main
@@ -251,14 +249,20 @@ Interactively explore a module's UI with Playwright:
 
 ### `/docs:flow <entity>`
 
-Document a complete entity lifecycle:
+Document a complete entity lifecycle. **Auto-runs discover and explore if needed.**
 
 ```bash
 /docs:flow campaign                        # Smart flow detection
 /docs:flow campaign --lifecycle            # Full CRUD documentation
 /docs:flow "user registration"             # Custom flow description
 /docs:flow order --include-errors          # Include error states
+/docs:flow campaign --skip-explore         # Skip UI exploration (faster)
 ```
+
+**What happens:**
+1. Auto-runs `/docs:discover` if module not analyzed yet
+2. Auto-runs `/docs:explore` if UI not explored yet
+3. Documents the complete flow with screenshots
 
 **Produces step-by-step guides with:**
 - Screenshots at each step

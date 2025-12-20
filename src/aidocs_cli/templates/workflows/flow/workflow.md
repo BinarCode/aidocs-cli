@@ -9,7 +9,7 @@ description: Document a complete entity lifecycle or custom user flow with cross
 
 **Your Role:** You are a flow documentarian. You will execute a complete user journey, capture each step, document what happens, and produce a detailed guide.
 
-**Requires:** Playwright MCP, Knowledge base (run /docs:discover first)
+**Requires:** Playwright MCP
 
 ---
 
@@ -17,7 +17,7 @@ description: Document a complete entity lifecycle or custom user flow with cross
 
 Parse the arguments:
 ```
-/docs:flow <entity|"custom description"> [--lifecycle] [--include-errors] [--output]
+/docs:flow <entity|"custom description"> [--lifecycle] [--include-errors] [--skip-explore] [--output]
 ```
 
 Examples:
@@ -26,18 +26,82 @@ Examples:
 /docs:flow campaign --lifecycle          # Full CRUD: create, view, edit, delete
 /docs:flow "user registration"           # Custom flow by description
 /docs:flow order --include-errors        # Include error states
-/docs:flow payment --output ./guides     # Custom output location
+/docs:flow campaign --skip-explore       # Skip UI exploration (use existing knowledge)
 ```
 
 ---
 
-## STEP 1: DETERMINE FLOW TYPE
+## STEP 1: AUTO-RUN PREREQUISITES
+
+**This command automatically runs discover and explore if needed.**
+
+### 1.1 Check Knowledge Base
+
+Check if `.docs-knowledge/modules/{entity}/` exists:
+
+```
+🔍 Checking knowledge base for: campaign
+
+□ Module discovery    → Not found
+□ UI exploration      → Not found
+□ Flow documentation  → Starting...
+```
+
+### 1.2 Auto-Run Discover (if missing)
+
+If knowledge base doesn't exist for this module:
+
+```
+📊 Step 1/3: Discovering module structure...
+
+Running: /docs:discover campaign --deep
+
+✓ Entity analyzed: Campaign (12 fields, 3 relationships)
+✓ Routes found: 5 endpoints
+✓ Validation rules: 8 rules extracted
+✓ Components: CampaignForm, CampaignList, CampaignDetail
+
+Knowledge saved to: .docs-knowledge/modules/campaigns/
+```
+
+### 1.3 Auto-Run Explore (if missing or outdated)
+
+If UI exploration hasn't been done (unless --skip-explore):
+
+```
+🖱️ Step 2/3: Exploring UI behaviors...
+
+Running: /docs:explore campaign
+
+✓ Pages explored: 4
+✓ Conditional UI discovered: 3 triggers
+✓ Validation messages captured: 8
+✓ Cross-page effects mapped: 5
+
+Exploration saved to: .docs-knowledge/modules/campaigns/ui-states/
+```
+
+### 1.4 Proceed to Flow Documentation
+
+```
+📚 Step 3/3: Documenting flow...
+
+Knowledge loaded:
+  ✓ Entity: Campaign
+  ✓ Routes: 5 endpoints
+  ✓ UI States: 4 pages mapped
+  ✓ Validation: 8 rules + messages
+
+Ready to document flow.
+```
+
+---
+
+## STEP 2: DETERMINE FLOW TYPE
 
 ### If entity name provided:
 
-Check `.docs-knowledge/modules/{entity}/`:
-- If exists: Load entity knowledge
-- If not: Run quick discovery or ask to run `/docs:discover {entity}` first
+Load knowledge from `.docs-knowledge/modules/{entity}/`
 
 **Detect available flows:**
 ```
