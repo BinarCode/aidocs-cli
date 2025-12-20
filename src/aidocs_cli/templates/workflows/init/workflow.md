@@ -482,13 +482,15 @@ Generate documentation using Claude Code:
 
 🚀 Next steps:
 
-1. Discover all modules in your codebase:
+1. Review docs-config.yaml and adjust if needed
+
+2. Discover all modules in your codebase:
    /docs:discover
 
-2. Create a documentation plan:
+3. Create a documentation plan:
    /docs:plan
 
-3. Generate all documentation:
+4. Generate all documentation:
    /docs:execute
 
 Or for a quick single page:
