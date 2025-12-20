@@ -43,23 +43,63 @@ pipx install aidocs-cli
 ## Quick Start
 
 ```bash
-# Initialize in current directory
-aidocs init .
+# Install the CLI
+uv tool install aidocs-cli
 
-# Check your environment
-aidocs check
+# Add to your project
+aidocs init .
 ```
 
-Then in Claude Code:
+## Usage Flow
+
+```
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                              SETUP (once)                                    │
+├──────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  $ aidocs init .                    Install commands into project            │
+│           │                                                                  │
+│           ▼                                                                  │
+│  /docs:init                         Configure: name, auth, style, output     │
+│                                                                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+                                      │
+                                      ▼
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                         DOCUMENT A MODULE                                    │
+├──────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  /docs:discover campaigns           Analyze code: models, routes, validation │
+│           │                                                                  │
+│           ▼                                                                  │
+│  /docs:explore campaigns            Test UI: click buttons, fill forms       │
+│           │                                                                  │
+│           ▼                                                                  │
+│  /docs:flow campaign --lifecycle    Generate: create → view → edit → delete  │
+│                                                                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+                                      │
+                                      ▼
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                         KEEP DOCS IN SYNC                                    │
+├──────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  # After implementing a feature:                                             │
+│  /docs:update --base main           Detect changes, update affected docs     │
+│                                                                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Quick Commands
 
 ```bash
-# Configure your project
-/docs:init
-
-# Generate docs for a page
+# Simple: Generate docs for one page
 /docs:generate https://myapp.com/dashboard
 
-# Update docs after code changes
+# Smart: Full module documentation
+/docs:discover campaigns && /docs:explore campaigns && /docs:flow campaign
+
+# Maintain: Update after code changes
 /docs:update --base main
 ```
 
