@@ -17,17 +17,20 @@ description: Document a complete entity lifecycle or custom user flow with cross
 
 Parse the arguments:
 ```
-/docs:flow <entity|"custom description"> [--lifecycle] [--include-errors] [--skip-explore] [--output]
+/docs:flow <entity|"custom description"> [--only <action>] [--include-errors] [--skip-explore] [--output]
 ```
 
 Examples:
 ```
-/docs:flow campaign                      # Smart detection of main flow
-/docs:flow campaign --lifecycle          # Full CRUD: create, view, edit, delete
+/docs:flow campaign                      # Full CRUD lifecycle (default)
+/docs:flow campaign --only create        # Only document create flow
+/docs:flow campaign --only edit          # Only document edit flow
 /docs:flow "user registration"           # Custom flow by description
 /docs:flow order --include-errors        # Include error states
-/docs:flow campaign --skip-explore       # Skip UI exploration (use existing knowledge)
+/docs:flow campaign --skip-explore       # Skip UI exploration (faster)
 ```
+
+**Default behavior:** Documents full lifecycle (create → view → edit → delete)
 
 ---
 
