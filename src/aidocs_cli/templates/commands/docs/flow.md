@@ -40,4 +40,4 @@ Generate comprehensive documentation for an entity lifecycle (create â†’ view â†
 
 ---
 
-**Execute workflow:** `@docs-workflows/flow/workflow.md`
+**Execute workflow:** `@.claude/workflows/docs/flow/workflow.md`

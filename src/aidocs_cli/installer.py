@@ -33,13 +33,14 @@ def install_docs_module(
     templates_path = get_templates_path()
 
     if ai == "claude":
-        commands_dest = target_dir / ".claude" / "commands" / "docs"
+        base_dir = target_dir / ".claude"
     elif ai == "cursor":
-        commands_dest = target_dir / ".cursor" / "commands" / "docs"
+        base_dir = target_dir / ".cursor"
     else:
-        commands_dest = target_dir / ".claude" / "commands" / "docs"
+        base_dir = target_dir / ".claude"
 
-    workflows_dest = target_dir / "docs-workflows"
+    commands_dest = base_dir / "commands" / "docs"
+    workflows_dest = base_dir / "workflows" / "docs"
 
     if commands_dest.exists() and not force:
         raise FileExistsError(
@@ -71,7 +72,7 @@ def install_docs_module(
 
         for workflow_dir in workflows_dest.iterdir():
             if workflow_dir.is_dir():
-                console.print(f"  [green]✓[/green] docs-workflows/{workflow_dir.name}/")
+                console.print(f"  [green]✓[/green] {workflow_dir.relative_to(target_dir)}/")
 
     update_gitignore(target_dir)
 

@@ -39,7 +39,7 @@ docs/.knowledge/
 
 ---
 
-**Execute workflow:** `@docs-workflows/discover/workflow.md`
+**Execute workflow:** `@.claude/workflows/docs/discover/workflow.md`
 
 **Knowledge Base Structure:**
 ```
@@ -103,4 +103,4 @@ docs/.knowledge/
 
 ---
 
-**Execute workflow:** `@docs-workflows/discover/workflow.md`
+**Execute workflow:** `@.claude/workflows/docs/discover/workflow.md`

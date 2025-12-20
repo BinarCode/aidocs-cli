@@ -65,4 +65,4 @@ If execution stops (error, timeout, manual stop):
 
 ---
 
-**Execute workflow:** `@docs-workflows/execute/workflow.md`
+**Execute workflow:** `@.claude/workflows/docs/execute/workflow.md`

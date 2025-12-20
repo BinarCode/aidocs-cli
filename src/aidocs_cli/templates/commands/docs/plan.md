@@ -69,4 +69,4 @@ cross_module_flows:
 
 ---
 
-**Execute workflow:** `@docs-workflows/plan/workflow.md`
+**Execute workflow:** `@.claude/workflows/docs/plan/workflow.md`

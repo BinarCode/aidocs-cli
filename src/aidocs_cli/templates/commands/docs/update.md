@@ -25,4 +25,4 @@ Update existing documentation based on git diff between your current branch and 
 
 ---
 
-**Execute workflow:** `@docs-workflows/update/workflow.md`
+**Execute workflow:** `@.claude/workflows/docs/update/workflow.md`

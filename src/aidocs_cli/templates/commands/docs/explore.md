@@ -34,4 +34,4 @@ Use Playwright to systematically explore your application, discovering UI behavi
 
 ---
 
-**Execute workflow:** `@docs-workflows/explore/workflow.md`
+**Execute workflow:** `@.claude/workflows/docs/explore/workflow.md`
