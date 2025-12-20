@@ -1,8 +1,31 @@
 # aidocs-cli
 
-AI-powered documentation generator for web applications. Install docs commands into your Claude Code project.
+AI-powered documentation generator for web applications.
 
-Uses Playwright MCP for browser automation and Claude's vision capabilities for page analysis.
+## How It Works
+
+aidocs generates comprehensive documentation by combining **three sources of truth**:
+
+1. **Vision Analysis** - Playwright captures screenshots, Claude analyzes what users actually see
+2. **Codebase Analysis** - Scans your frontend components, backend routes, validation rules, and models
+3. **Interactive Exploration** - Clicks buttons, fills forms, discovers conditional UI and validation messages
+
+This produces documentation that's accurate to both the code AND the actual user experience.
+
+```
+┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
+│  📸 Screenshots │  +  │  📄 Code Analysis │  +  │  🖱️ UI Testing   │
+│  (what users    │     │  (validation,     │     │  (conditional   │
+│   see)          │     │   routes, models) │     │   fields, flows)│
+└────────┬────────┘     └────────┬─────────┘     └────────┬────────┘
+         │                       │                        │
+         └───────────────────────┼────────────────────────┘
+                                 ▼
+                    ┌────────────────────────┐
+                    │  📚 Smart Documentation │
+                    │  that stays in sync    │
+                    └────────────────────────┘
+```
 
 ## Installation
 
