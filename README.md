@@ -152,6 +152,16 @@ aidocs check
 
 Show version information.
 
+### `aidocs update`
+
+Update aidocs-cli to the latest version.
+
+```bash
+aidocs update
+```
+
+Automatically detects and uses the appropriate package manager (uv, pipx, or pip).
+
 ## Slash Commands
 
 After running `aidocs init`, these commands are available in Claude Code:
