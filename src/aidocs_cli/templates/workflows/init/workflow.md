@@ -403,14 +403,16 @@ Welcome to the {product_name} documentation. This guide covers all features and 
 ## Generating Documentation
 
 ```bash
-# Generate docs for a specific page
+# Recommended workflow: Discover → Plan → Execute
+/docs:discover        # Scan codebase, find all modules
+/docs:plan            # Create documentation plan
+/docs:execute         # Generate all documentation
+
+# Or generate a single page
 /docs:generate {base_url}/dashboard
 
 # Update docs after code changes
 /docs:update --base main
-
-# Generate all pages at once
-/docs:batch --discover
 ```
 
 ## Documentation Info
@@ -445,11 +447,13 @@ Generate documentation using Claude Code:
 # Initialize (first time only)
 /docs:init
 
-# Generate docs for a page
-/docs:generate https://yourapp.com/dashboard
+# Discover → Plan → Execute workflow
+/docs:discover        # Scan codebase, find all modules
+/docs:plan            # Create documentation plan
+/docs:execute         # Generate all documentation
 
-# Generate all docs
-/docs:batch --discover
+# Or generate a single page
+/docs:generate https://yourapp.com/dashboard
 \`\`\`
 ```
 
@@ -478,21 +482,17 @@ Generate documentation using Claude Code:
 
 🚀 Next steps:
 
-1. Review docs-config.yaml and adjust if needed
+1. Discover all modules in your codebase:
+   /docs:discover
 
-2. Generate your first doc:
+2. Create a documentation plan:
+   /docs:plan
+
+3. Generate all documentation:
+   /docs:execute
+
+Or for a quick single page:
    /docs:generate {base_url}/dashboard
-   {if credentials stored}
-   (credentials will be used automatically)
-   {/if}
-
-3. Or generate all pages:
-   /docs:batch --discover
-
-{if no credentials stored}
-4. To authenticate:
-   /docs:generate {url} --auth user@example.com:password
-{/if}
 
 Happy documenting! 📚
 ```
