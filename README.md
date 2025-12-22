@@ -184,6 +184,7 @@ After running `aidocs init`, these commands are available in Claude Code:
 | `/docs:execute` | Execute plan, generate all docs | Yes |
 | `/docs:explore <module>` | Interactive UI exploration with Playwright | Yes |
 | `/docs:flow <entity>` | Document complete entity lifecycle (CRUD) | Yes |
+| `/docs:vector-init` | Generate database migration for vector embeddings | No |
 
 ### `/docs:init`
 
@@ -535,6 +536,99 @@ Add to your `~/.claude.json` or project `.mcp.json`:
   }
 }
 ```
+
+## Vector Database (Semantic Search)
+
+Store your documentation as vector embeddings for semantic search. This enables AI-powered documentation search in your application.
+
+### Why Vector Storage?
+
+- **Semantic Search** - Find docs by meaning, not just keywords
+- **AI Integration** - Power chatbots and AI assistants with your docs
+- **Context Retrieval** - RAG (Retrieval Augmented Generation) for LLMs
+
+### `/docs:vector-init`
+
+Generate a database migration for storing documentation embeddings:
+
+```bash
+/docs:vector-init                     # Default: 1536 dimensions
+/docs:vector-init --dimensions 3072   # For text-embedding-3-large
+/docs:vector-init --table my_docs     # Custom table name
+```
+
+**What it does:**
+1. Detects your framework (Laravel, Prisma, TypeORM, Drizzle, Django)
+2. Generates the appropriate migration file
+3. Creates table with pgvector support for similarity search
+
+**Supported Frameworks:**
+
+| Framework | Detection | Output |
+|-----------|-----------|--------|
+| Laravel | `composer.json` | PHP migration with `$table->vector()` |
+| Prisma | `schema.prisma` | Prisma schema addition |
+| TypeORM | `package.json` | TypeScript migration class |
+| Drizzle | `drizzle-orm` | Schema + SQL migration |
+| Django | `manage.py` | Django migration with pgvector |
+| Fallback | None detected | Raw PostgreSQL SQL |
+
+**Table Structure:**
+
+```
+doc_embeddings
+├── id             UUID PRIMARY KEY
+├── file_path      VARCHAR(500)      # Path to .md file
+├── content        TEXT              # Document content
+├── chunk_index    INTEGER           # For large docs split into chunks
+├── title          VARCHAR(255)      # Document title
+├── metadata       JSONB             # Tags, module, category, etc.
+├── embedding      VECTOR(1536)      # OpenAI embedding
+├── created_at     TIMESTAMP
+└── updated_at     TIMESTAMP
+```
+
+**Indexes:**
+- `file_path` - B-tree index for path lookups
+- `embedding` - HNSW index for fast vector similarity search
+
+### Requirements
+
+- **PostgreSQL** with [pgvector](https://github.com/pgvector/pgvector) extension
+- OpenAI API key (for generating embeddings)
+
+**Embedding Model:** `text-embedding-3-small` (1536 dimensions)
+- Cost: ~$0.02 per 1M tokens
+- Alternative: `text-embedding-3-large` (3072 dimensions) for higher quality
+
+### Example: Laravel
+
+```bash
+# 1. Generate migration
+/docs:vector-init
+
+# 2. Run migration
+php artisan migrate
+
+# 3. Coming soon: Import docs
+/docs:import    # Scans docs/, generates embeddings, inserts into DB
+```
+
+### Coming Soon: `/docs:import`
+
+Import your markdown documentation into the vector database:
+
+```bash
+/docs:import                          # Import all docs
+/docs:import --path docs/users        # Import specific folder
+/docs:import --chunk-size 1000        # Custom chunk size
+```
+
+This will:
+1. Scan your `docs/` directory for `.md` files
+2. Split large documents into chunks
+3. Generate embeddings via OpenAI API
+4. Insert into `doc_embeddings` table
 
 ## Development
 
