@@ -40,6 +40,23 @@ uv tool install aidocs --from git+https://github.com/binarcode/aidocs-cli.git
 pipx install aidocs
 ```
 
+## Updating
+
+When a new version is released, update the CLI and reinstall commands in your project:
+
+```bash
+# 1. Update the CLI
+aidocs update
+
+# 2. Reinstall commands in your project (adds new slash commands)
+cd your-project
+aidocs init . --force
+```
+
+The `--force` flag overwrites existing command files, adding any new commands from the latest version.
+
+**Tip:** Run `aidocs update --github` to get the latest unreleased features from GitHub.
+
 ## Quick Start
 
 ```bash
