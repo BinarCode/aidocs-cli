@@ -1,55 +1,56 @@
 ---
 name: docs:flow
-description: Document a code flow by analyzing the codebase from a human description. Includes mermaid diagrams, code snippets, and optional UI screenshots.
+description: Document a feature with screenshots and step-by-step instructions. Use --technical for developer-focused output.
 ---
 
 # Document a Code Flow
 
-Analyze your codebase to document how a specific feature or process works based on a natural language description. Optionally captures UI screenshots if Playwright MCP is available.
+Create user-friendly documentation for a feature based on a natural language description. Captures UI screenshots and generates step-by-step guides.
 
 **Usage:**
 ```
-/docs:flow "<description>" [--no-screenshots]
-/docs:flow "sync users from discord"
-/docs:flow "import payments from csv"
-/docs:flow "how payments are processed"
-/docs:flow "webhook handling for stripe" --no-screenshots
+/docs:flow "<description>"                    # User-focused (default)
+/docs:flow "<description>" --technical        # Developer-focused
+/docs:flow "<description>" --no-screenshots   # Skip screenshots
+```
+
+**Examples:**
+```
+/docs:flow "how to create employees"              # End-user guide with screenshots
+/docs:flow "import payments from csv"             # End-user guide with screenshots
+/docs:flow "payment webhook handling" --technical # Developer docs with code
+/docs:flow "sync users" --no-screenshots          # Quick, no screenshots
 ```
 
 **Arguments:**
-- `"description"` - Natural language description of the flow to document (in quotes)
-- `--no-screenshots` - Skip UI screenshot capture (faster, code-only)
+- `"description"` - Natural language description of the flow (in quotes)
+- `--technical` - Developer-focused output with code snippets, file paths, diagrams
+- `--no-screenshots` - Skip UI screenshot capture
 
-**What it does:**
-1. Parses your description to extract keywords and detect UI involvement
-2. Searches the codebase for relevant files (jobs, services, controllers, etc.)
-3. Identifies entry points (commands, jobs, webhooks, routes, UI buttons)
-4. Traces the execution flow and builds a call graph
-5. Generates a mermaid sequence diagram
-6. **Captures UI screenshots** (if Playwright MCP available and route detected)
-7. Extracts relevant code snippets with file:line references
-8. Creates comprehensive markdown documentation
+**Output modes:**
 
-**Output:**
-- `docs/flows/{kebab-case-title}.md` - Complete flow documentation
-- `docs/flows/images/*.png` - UI screenshots (if captured)
+| Mode | Output | Audience |
+|------|--------|----------|
+| Default | Screenshots, plain English, step-by-step | End users |
+| `--technical` | Code snippets, file paths, mermaid diagrams | Developers |
 
-**Example output for `/docs:flow "import payments from csv"`:**
-- Overview of what the flow does
-- **Screenshot of the Payroll page with "Import" button**
-- **Screenshot of the import modal/form**
-- Mermaid sequence diagram showing data flow
-- Entry points (UI button, API endpoint, CLI command)
-- Step-by-step code walkthrough with snippets
-- Validation rules
-- Related files table
+**Default output (user-focused):**
+- "How to..." title
+- Before You Start (prerequisites)
+- Step-by-step instructions with screenshots
+- What Happens Next
+- Troubleshooting
 
-**Screenshots are captured automatically when:**
-- Playwright MCP is installed
-- `urls.base` is configured in `docs/config.yml`
-- A UI route is detected in the code (controller → route → view)
+**Technical output (`--technical`):**
+- Architecture diagram (mermaid)
+- Entry points table
+- Code snippets with file:line references
+- Database operations
+- Events and configuration
 
-**No Playwright?** The command still works - just skips screenshots and documents code only.
+**Output location:**
+- `docs/flows/{kebab-case-title}.md`
+- `docs/flows/images/*.png` (screenshots)
 
 ---
 
