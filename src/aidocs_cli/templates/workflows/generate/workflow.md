@@ -63,23 +63,57 @@ Check `auth.method` in config:
 
 Parse the arguments passed to this workflow. Expected format:
 ```
-/docs:generate <url> [--auth user:pass] [--output ./docs] [--codebase ./src] [--skip-flows] [--flow "flow name"]
+/docs:generate <url-or-module> [--auth user:pass] [--output ./docs] [--codebase ./src] [--skip-flows] [--flow "flow name"]
 ```
 
 Extract:
-- `url` (required) - The URL to document (can be full URL or path if base URL in config)
+- `url` (required) - The URL or module name to document (can be full URL, path, or module name)
 - `auth` (optional) - Credentials in user:pass format for authenticated pages
-- `output` (optional) - Output directory (default from config or ./docs)
+- `output` (optional) - Base output directory (default from config or ./docs)
 - `codebase` (optional) - Path to codebase (default from config or .)
 - `skip-flows` (optional) - Skip interactive flow detection, just capture page
 - `flow` (optional) - Automatically document a specific flow (e.g., --flow "create campaign")
 
-If URL is missing, ask the user: "Please provide the URL to document."
+If URL is missing, ask the user: "Please provide the URL or module name to document."
 
-**URL Resolution:**
-- If full URL provided: use as-is
+**URL/Module Resolution:**
+- If full URL provided: use as-is, extract module from path
 - If path provided (e.g., `/campaigns`): combine with `urls.base` from config
+- If module name provided (e.g., `projects`): search routes for matching URL
 - If no base URL in config and path provided: ask for full URL
+
+**Module Name Detection:**
+If input looks like a module name (no `/` prefix, no `http`):
+1. Search `routes/web.php` or `routes/api.php` for matching route
+2. Search for controller with matching name (e.g., `ProjectsController`)
+3. If found, construct URL from base URL + route path
+4. If not found, ask user for the full URL
+
+---
+
+## OUTPUT STRUCTURE
+
+**Output is organized by module name:**
+
+```
+docs/
+├── {module}/
+│   ├── index.md          # Main page documentation
+│   └── images/
+│       ├── {module}.png  # Main screenshot
+│       └── {module}-flow-step-1.png  # Flow screenshots
+```
+
+**Examples:**
+- `/docs:generate /projects` → `docs/projects/index.md`
+- `/docs:generate /users/settings` → `docs/users-settings/index.md`
+- `/docs:generate campaigns` → `docs/campaigns/index.md`
+
+**Module name extraction:**
+- From URL path: `/projects` → `projects`
+- From URL path: `/users/settings` → `users-settings`
+- From full URL: `https://app.com/campaigns` → `campaigns`
+- From module name: `projects` → `projects`
 
 ---
 
@@ -145,13 +179,14 @@ Use Playwright MCP to:
 
 ## STEP 3: CAPTURE AND ANALYZE PAGE
 
-1. **Capture full-page screenshot** using Playwright MCP
-2. **Save screenshot to file:**
-   - Create `{output}/images/` directory if it doesn't exist
-   - Save as `{output}/images/{kebab-case-title}.png`
-   - Store the relative path for markdown: `./images/{kebab-case-title}.png`
-3. **Extract page title** from the browser
-4. **Analyze the screenshot visually** - identify:
+1. **Extract module name** from URL (e.g., `/projects` → `projects`)
+2. **Capture full-page screenshot** using Playwright MCP
+3. **Save screenshot to file:**
+   - Create `docs/{module}/images/` directory if it doesn't exist
+   - Save as `docs/{module}/images/{module}.png`
+   - Store the relative path for markdown: `./images/{module}.png`
+4. **Extract page title** from the browser
+5. **Analyze the screenshot visually** - identify:
    - Page purpose and layout
    - Main sections (header, sidebar, main content, footer)
    - Interactive elements (buttons, forms, links, tables)
@@ -250,7 +285,7 @@ Create a markdown file with the following structure:
 - Remove runtime data (counts, specific IDs, timestamps)
 - Describe WHAT users can do, not HOW it's implemented
 - Keep it concise and scannable
-- Use the page title for filename (kebab-case): `campaigns.md`, `user-settings.md`
+- Save as `docs/{module}/index.md` (e.g., `docs/projects/index.md`)
 - Include project name from config in header if available
 
 ---
@@ -450,26 +485,35 @@ If user requests a complete flow (e.g., "Create a new campaign"):
 
 ## STEP 8: SAVE AND REPORT
 
-1. **Create output directory** if it doesn't exist
-2. **Create images subdirectory** `{output}/images/` if it doesn't exist
-3. **Save all screenshots**:
-   - Main page: `{output}/images/{kebab-case-title}.png`
-   - Flow steps: `{output}/images/{kebab-case-title}-flow-step-{n}.png`
-   - Form states: `{output}/images/{kebab-case-title}-form-{state}.png`
-4. **Write markdown file** to `{output}/{kebab-case-title}.md`
-5. **Report completion:**
+1. **Extract module name** from URL:
+   - `/projects` → `projects`
+   - `/users/settings` → `users-settings`
+   - `https://app.com/campaigns` → `campaigns`
+
+2. **Create module directory** `docs/{module}/` if it doesn't exist
+
+3. **Create images subdirectory** `docs/{module}/images/` if it doesn't exist
+
+4. **Save all screenshots**:
+   - Main page: `docs/{module}/images/{module}.png`
+   - Flow steps: `docs/{module}/images/{module}-flow-step-{n}.png`
+   - Form states: `docs/{module}/images/{module}-form-{state}.png`
+
+5. **Write markdown file** to `docs/{module}/index.md`
+
+6. **Report completion:**
 
 ```
 ✅ Documentation generated successfully!
 
-📄 File: {output path}
+📄 File: docs/{module}/index.md
+📁 Folder: docs/{module}/
 🖼️  Screenshots: {count} images saved
-   - Main page screenshot
+   - docs/{module}/images/{module}.png
    {if flow documented}
    - {flow_name} flow ({step_count} steps)
    {/if}
 📊 Sections: Overview, Features, Key Actions, [How to: ...], [Data Display], [Related Pages]
-⏱️  Time: {elapsed time}
 
 Review the generated documentation and edit as needed.
 ```
