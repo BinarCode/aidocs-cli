@@ -57,8 +57,6 @@ def install_docs_module(
     console.print("[dim]Copying command files...[/dim]")
     commands_src = templates_path / "commands" / "docs"
     if commands_src.exists():
-        if commands_dest.exists() and force:
-            shutil.rmtree(commands_dest)
         commands_dest.mkdir(parents=True, exist_ok=True)
         for file in commands_src.glob("*.md"):
             dest_file = commands_dest / file.name
@@ -68,8 +66,6 @@ def install_docs_module(
     console.print("[dim]Copying workflow files...[/dim]")
     workflows_src = templates_path / "workflows"
     if workflows_src.exists():
-        if workflows_dest.exists() and force:
-            shutil.rmtree(workflows_dest)
         shutil.copytree(workflows_src, workflows_dest, dirs_exist_ok=True)
 
         for workflow_dir in workflows_dest.iterdir():
