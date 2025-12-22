@@ -155,29 +155,71 @@ https://github.com/anthropics/mcp-playwright
 
 ---
 
-## STEP 2: NAVIGATE TO URL
+## STEP 2: AUTHENTICATE (if needed)
+
+**IMPORTANT:** Before navigating to the target URL, check if authentication is required.
+
+### 2.1 Load Credentials
+
+Check for credentials in this priority order:
+
+1. **`--auth` flag** (highest priority): Parse `user:pass` format
+2. **`docs/.auth` file**: Read YAML credentials
+3. **Environment variables**: Check `$DOCS_AUTH_USER` and `$DOCS_AUTH_PASS`
+
+**Read `docs/.auth` if it exists:**
+
+```yaml
+# docs/.auth format:
+username: "user@example.com"
+password: "secretpassword"
+login_url: "/login"  # optional, defaults to /login
+```
+
+### 2.2 Perform Login
+
+If credentials are found (from any source):
+
+1. Get base URL from `docs/config.yml` → `urls.base`
+2. Navigate to login URL: `{base_url}/login` (or custom `login_url` from `.auth`)
+3. Wait for login form to load
+4. Fill username field (look for: `input[type="email"]`, `input[name="email"]`, `#email`, `input[name="username"]`)
+5. Fill password field (look for: `input[type="password"]`, `input[name="password"]`, `#password`)
+6. Click submit button (look for: `button[type="submit"]`, `input[type="submit"]`, button containing "Login"/"Sign in")
+7. Wait for redirect/navigation to complete
+8. Verify login succeeded (check for dashboard, user menu, or absence of login form)
+
+```
+🔐 Authenticating...
+   Reading credentials from docs/.auth
+   Navigating to: https://app.example.com/login
+   Filling login form...
+   ✓ Logged in successfully
+```
+
+**If login fails:**
+```
+⚠️ Authentication failed - check credentials in docs/.auth
+   Continuing without authentication (page may show login screen)
+```
+
+---
+
+## STEP 3: NAVIGATE TO URL
 
 Use Playwright MCP to:
-1. Launch browser (headless)
+1. Launch browser (headless) - or reuse from auth step
 2. Navigate to the provided URL
 3. Wait for page to load (networkidle)
-
-**If authentication is provided (`--auth`):**
-1. Check if current page is a login page (look for login form, password field)
-2. If yes, parse credentials from `user:pass` format
-3. Fill in the login form fields
-4. Submit the form
-5. Wait for navigation to complete
-6. Navigate to the original URL if redirected away
 
 **On navigation failure:** Report the error with suggestions:
 - Check if URL is correct
 - Check network connectivity
-- Check if authentication is required
+- Check if authentication is required (suggest adding credentials to `docs/.auth`)
 
 ---
 
-## STEP 3: CAPTURE AND ANALYZE PAGE
+## STEP 4: CAPTURE AND ANALYZE PAGE
 
 1. **Extract module name** from URL (e.g., `/projects` → `projects`)
 2. **Capture full-page screenshot** using Playwright MCP
@@ -206,7 +248,7 @@ Screenshot saved: [path to saved screenshot]
 
 ---
 
-## STEP 4: ANALYZE CODEBASE (if available)
+## STEP 5: ANALYZE CODEBASE (if available)
 
 Search the codebase for code related to this page:
 
@@ -232,7 +274,7 @@ Log: "No codebase analysis available - using visual analysis only"
 
 ---
 
-## STEP 5: GENERATE DOCUMENTATION
+## STEP 6: GENERATE DOCUMENTATION
 
 Create a markdown file with the following structure:
 
@@ -290,7 +332,7 @@ Create a markdown file with the following structure:
 
 ---
 
-## STEP 6: DETECT INTERACTIVE OPPORTUNITIES
+## STEP 7: DETECT INTERACTIVE OPPORTUNITIES
 
 **Skip this step if:**
 - `--skip-flows` flag was provided
@@ -349,7 +391,7 @@ Enter choice (or type a custom flow to document):
 
 ---
 
-## STEP 7: INTERACTIVE FLOW DOCUMENTATION (if user chooses)
+## STEP 8: INTERACTIVE FLOW DOCUMENTATION (if user chooses)
 
 ### 7.1 Form Documentation Flow
 
@@ -483,7 +525,7 @@ If user requests a complete flow (e.g., "Create a new campaign"):
 
 ---
 
-## STEP 8: SAVE AND REPORT
+## STEP 9: SAVE AND REPORT
 
 1. **Extract module name** from URL:
    - `/projects` → `projects`
