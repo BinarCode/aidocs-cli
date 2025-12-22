@@ -10,6 +10,7 @@ import typer
 from rich.console import Console
 from rich.panel import Panel
 
+from .chunker import chunk_directory
 from .installer import check_tools, install_docs_module
 
 app = typer.Typer(
@@ -197,6 +198,94 @@ def update(
         raise typer.Exit(1)
     except Exception as e:
         console.print(f"[red]Error updating: {e}[/red]")
+        raise typer.Exit(1)
+
+
+@app.command()
+def chunk(
+    docs_dir: Optional[str] = typer.Argument(
+        "docs",
+        help="Directory containing markdown files to chunk.",
+    ),
+    force: bool = typer.Option(
+        False,
+        "--force",
+        "-f",
+        help="Re-chunk all files (ignore manifest cache).",
+    ),
+    dry: bool = typer.Option(
+        False,
+        "--dry",
+        help="Preview what would be chunked without writing files.",
+    ),
+) -> None:
+    """Chunk markdown files for vector DB import.
+
+    Splits markdown files at ## headings and creates .chunks.json files
+    alongside each .md file. Tracks changes via manifest.json.
+
+    Examples:
+        aidocs chunk                  # Chunk all files in docs/
+        aidocs chunk docs/users       # Chunk specific directory
+        aidocs chunk --force          # Re-chunk all files
+        aidocs chunk --dry            # Preview only
+    """
+    target_dir = Path(docs_dir)
+
+    if not target_dir.exists():
+        console.print(f"[red]Error: Directory not found: {docs_dir}[/red]")
+        raise typer.Exit(1)
+
+    if not target_dir.is_dir():
+        console.print(f"[red]Error: Not a directory: {docs_dir}[/red]")
+        raise typer.Exit(1)
+
+    mode = "[yellow]DRY RUN[/yellow] - " if dry else ""
+    console.print(f"{mode}[blue]Chunking markdown files in {docs_dir}...[/blue]")
+    console.print()
+
+    try:
+        stats = chunk_directory(target_dir, force=force, dry=dry)
+
+        # Display results
+        for file_info in stats["files"]:
+            status = file_info["status"]
+            path = file_info["path"]
+            chunks = file_info["chunks"]
+
+            if status == "unchanged":
+                console.print(f"  [dim]○ {path} (unchanged)[/dim]")
+            elif status == "new":
+                console.print(f"  [green]+ {path}[/green] ({chunks} chunks)")
+            else:
+                console.print(f"  [yellow]↻ {path}[/yellow] ({chunks} chunks)")
+
+        console.print()
+
+        if dry:
+            console.print(Panel.fit(
+                f"[yellow]DRY RUN - No files written[/yellow]\n\n"
+                f"Would process: {stats['processed']} files\n"
+                f"Would skip: {stats['skipped']} unchanged files\n"
+                f"Would create: {stats['chunks_created']} chunks\n\n"
+                f"[dim]Run without --dry to create chunk files.[/dim]",
+                title="Preview",
+                border_style="yellow",
+            ))
+        else:
+            console.print(Panel.fit(
+                f"[green]Chunking complete![/green]\n\n"
+                f"Processed: {stats['processed']} files\n"
+                f"Skipped: {stats['skipped']} unchanged files\n"
+                f"Created: {stats['chunks_created']} chunks\n\n"
+                f"[dim]Manifest saved to {docs_dir}/.chunks/manifest.json[/dim]\n"
+                f"[dim]Run /docs:sync to generate embeddings and SQL.[/dim]",
+                title="Success",
+                border_style="green",
+            ))
+
+    except Exception as e:
+        console.print(f"[red]Error: {e}[/red]")
         raise typer.Exit(1)
 
 
