@@ -21,7 +21,7 @@ console = Console()
 def version_callback(value: bool) -> None:
     """Print version and exit."""
     if value:
-        console.print(f"aidocs-cli version {__version__}")
+        console.print(f"aidocs version {__version__}")
         raise typer.Exit()
 
 
@@ -135,7 +135,7 @@ def check() -> None:
 @app.command()
 def version() -> None:
     """Show version information."""
-    console.print(f"aidocs-cli version {__version__}")
+    console.print(f"aidocs version {__version__}")
 
 
 GITHUB_REPO = "git+https://github.com/BinarCode/aidocs-cli.git"
@@ -149,7 +149,7 @@ def update(
         help="Install latest from GitHub instead of PyPI.",
     ),
 ) -> None:
-    """Update aidocs-cli to the latest version.
+    """Update aidocs to the latest version.
 
     Examples:
         aidocs update              # Update from PyPI
@@ -166,7 +166,7 @@ def update(
     if github:
         if uv_path:
             console.print("[dim]Using uv to install from GitHub...[/dim]")
-            cmd = ["uv", "tool", "install", "--force", "aidocs-cli", "--from", GITHUB_REPO]
+            cmd = ["uv", "tool", "install", "--force", "aidocs", "--from", GITHUB_REPO]
         elif pipx_path:
             console.print("[dim]Using pipx to install from GitHub...[/dim]")
             cmd = ["pipx", "install", "--force", GITHUB_REPO]
@@ -176,13 +176,13 @@ def update(
     else:
         if uv_path:
             console.print("[dim]Using uv to update...[/dim]")
-            cmd = ["uv", "tool", "upgrade", "aidocs-cli"]
+            cmd = ["uv", "tool", "upgrade", "aidocs"]
         elif pipx_path:
             console.print("[dim]Using pipx to update...[/dim]")
-            cmd = ["pipx", "upgrade", "aidocs-cli"]
+            cmd = ["pipx", "upgrade", "aidocs"]
         else:
             console.print("[dim]Using pip to update...[/dim]")
-            cmd = [sys.executable, "-m", "pip", "install", "--upgrade", "aidocs-cli"]
+            cmd = [sys.executable, "-m", "pip", "install", "--upgrade", "aidocs"]
 
     try:
         result = subprocess.run(
@@ -194,7 +194,7 @@ def update(
         if result.returncode == 0:
             console.print()
             console.print(Panel.fit(
-                "[green]aidocs-cli updated successfully![/green]\n\n"
+                "[green]aidocs updated successfully![/green]\n\n"
                 f"[dim]{result.stdout.strip() if result.stdout.strip() else 'Up to date'}[/dim]",
                 title="Update Complete",
                 border_style="green",
@@ -215,9 +215,9 @@ def update(
         console.print("[red]Error: Could not find package manager.[/red]")
         console.print("Try running manually:")
         if github:
-            console.print(f"  [cyan]uv tool install aidocs-cli --from {GITHUB_REPO}[/cyan]")
+            console.print(f"  [cyan]uv tool install aidocs --from {GITHUB_REPO}[/cyan]")
         else:
-            console.print("  [cyan]uv tool upgrade aidocs-cli[/cyan]")
+            console.print("  [cyan]uv tool upgrade aidocs[/cyan]")
         raise typer.Exit(1)
     except Exception as e:
         console.print(f"[red]Error updating: {e}[/red]")

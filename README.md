@@ -1,4 +1,4 @@
-# aidocs-cli
+# aidocs
 
 AI-powered documentation generator for web applications.
 
@@ -31,20 +31,20 @@ This produces documentation that's accurate to both the code AND the actual user
 
 ```bash
 # Install from PyPI
-uv tool install aidocs-cli
+uv tool install aidocs
 
 # Or install from GitHub
-uv tool install aidocs-cli --from git+https://github.com/binarcode/aidocs-cli.git
+uv tool install aidocs --from git+https://github.com/binarcode/aidocs-cli.git
 
 # Or use pipx
-pipx install aidocs-cli
+pipx install aidocs
 ```
 
 ## Quick Start
 
 ```bash
 # Install the CLI
-uv tool install aidocs-cli
+uv tool install aidocs
 
 # Add to your project
 aidocs init .
@@ -189,7 +189,7 @@ Show version information.
 
 ### `aidocs update`
 
-Update aidocs-cli to the latest version.
+Update aidocs to the latest version.
 
 ```bash
 aidocs update              # Update from PyPI

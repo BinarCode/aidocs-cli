@@ -1,5 +1,5 @@
 [project]
-name = "aidocs-cli"
+name = "aidocs"
 version = "0.10.0"
 description = "AI-powered documentation generator for web applications. Install docs commands into your Claude Code project."
 readme = "README.md"
