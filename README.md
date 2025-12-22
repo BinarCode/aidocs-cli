@@ -141,9 +141,9 @@ aidocs init .
 # Simple: Generate docs for one page
 /docs:generate https://myapp.com/dashboard
 
-# Flow: Document a code flow from description
-/docs:flow "sync users from discord"
-/docs:flow "import payments from csv"
+# Flow: Document a feature (user-focused by default)
+/docs:flow "how to create employees"
+/docs:flow "import payments" --technical    # Developer docs
 
 # Batch: Document entire project
 /docs:discover && /docs:plan && /docs:execute
@@ -297,7 +297,7 @@ After running `aidocs init`, these commands are available in Claude Code:
 | `/docs:plan` | Create ordered documentation plan | No |
 | `/docs:execute` | Execute plan, generate all docs | Yes |
 | `/docs:explore <module>` | Interactive UI exploration with Playwright | Yes |
-| `/docs:flow "<description>"` | Document a code flow from human description | Optional |
+| `/docs:flow "<description>"` | Document a feature with screenshots (use `--technical` for dev docs) | Optional |
 | `/docs:rag-vectors` | Generate embeddings and SQL for vector DB import | No |
 | `/docs:rag-init` | Generate database migration for vector embeddings | No |
 | `/docs:rag` | Setup RAG: chunks → migration → embeddings (all-in-one) | No |
@@ -500,78 +500,86 @@ Interactively explore a module's UI with Playwright:
 
 ### `/docs:flow "<description>"`
 
-Document a code flow by analyzing your codebase from a natural language description. Generates mermaid diagrams, code snippets, and optional UI screenshots.
+Document a feature with screenshots and step-by-step instructions. By default, creates **user-focused** documentation. Use `--technical` for developer documentation.
 
 ```bash
-/docs:flow "sync users from discord"              # Backend integration flow
-/docs:flow "import payments from csv"             # Import flow with UI
-/docs:flow "how payments are processed"           # Processing flow
-/docs:flow "webhook handling for stripe"          # Webhook flow
-/docs:flow "user registration" --no-screenshots   # Skip UI screenshots
+/docs:flow "how to create employees"              # User guide with screenshots
+/docs:flow "import payments from csv"             # User guide with screenshots
+/docs:flow "payment processing" --technical       # Developer docs with code
+/docs:flow "stripe webhooks" --technical          # Developer docs with code
+/docs:flow "user registration" --no-screenshots   # Skip screenshots
 ```
 
-**What it does:**
-1. Parses your description to extract keywords (entities, actions)
-2. Searches the codebase for relevant files (jobs, services, controllers)
-3. Identifies entry points (commands, jobs, webhooks, routes, UI buttons)
-4. Traces the execution flow and builds a call graph
-5. Generates a mermaid sequence diagram
-6. Captures UI screenshots (if Playwright available and route detected)
-7. Extracts code snippets with file:line references
-8. Creates comprehensive markdown documentation
+**Arguments:**
+- `--technical` - Generate developer-focused documentation with code snippets
+- `--no-screenshots` - Skip UI screenshot capture
+
+**Output modes:**
+
+| Mode | Audience | Output |
+|------|----------|--------|
+| Default | End users | Screenshots, plain English, step-by-step guide |
+| `--technical` | Developers | Code snippets, file paths, mermaid diagrams |
 
 **Output:** `docs/flows/{kebab-case-title}.md`
 
-**Example output for `/docs:flow "import payments from csv"`:**
+**Example: User-focused (default)**
 
 ```markdown
-# Import Payments from CSV
+# How to Import Payments
 
-## Overview
-Import payment records from a CSV file into the system.
+Import payment records from a CSV file.
 
-## UI Location
-![Payroll Page](./images/import-payments-trigger.png)
-Click the **"Import Payments"** button on the Payroll page.
+## Before You Start
+- Prepare a CSV with columns: date, amount, description
+- Maximum 10,000 rows per import
 
-## Flow Diagram
-```mermaid
-sequenceDiagram
-    participant User
-    participant Controller as PayrollController
-    participant Job as ImportPaymentsJob
-    participant DB as Database
+## Steps
 
-    User->>Controller: POST /payroll/import
-    Controller->>Job: dispatch()
-    Job->>DB: Payment::create()
+### Step 1: Go to Payroll
+Navigate to **Payroll** from the sidebar.
+
+![Payroll Page](./images/payroll-page.png)
+
+### Step 2: Click Import
+Click the **Import Payments** button.
+
+![Import Button](./images/import-button.png)
+
+### Step 3: Upload Your File
+Select your CSV file and click **Start Import**.
+
+## What Happens Next
+- Import runs in background
+- You'll receive an email when complete
 ```
+
+**Example: Technical (`--technical`)**
+
+```markdown
+# Import Payments Flow
+
+## Architecture
+sequenceDiagram: User → Controller → Job → Database
 
 ## Entry Points
-| Trigger | Location | Command/Route |
-|---------|----------|---------------|
-| UI Button | /payroll | "Import Payments" button |
-| API | POST /payroll/import | With CSV file |
-| CLI | Artisan | `php artisan payments:import` |
+| Trigger | Route |
+|---------|-------|
+| UI | POST /payroll/import |
+| CLI | php artisan payments:import |
 
-## Step-by-Step
-### 1. Upload CSV File
-Location: `app/Http/Controllers/PayrollController.php:45`
-```php
-public function import(ImportPaymentsRequest $request)
-{
-    ImportPaymentsJob::dispatch($request->file('csv'));
-}
-```
-...
+## Execution Flow
+
+**File:** `app/Http/Controllers/PayrollController.php:45`
+public function import(Request $request) { ... }
+
+**File:** `app/Jobs/ImportPaymentsJob.php:28`
+public function handle() { ... }
 ```
 
-**Screenshots are captured automatically when:**
-- Playwright MCP is installed
-- `urls.base` is configured in `docs/config.yml`
-- A UI route is detected in the code (controller → route → view)
-
-**No Playwright?** The command still works - generates code analysis, mermaid diagrams, and snippets without screenshots.
+**Screenshots require:**
+- Playwright MCP installed
+- `urls.base` configured in `docs/config.yml`
 
 ### `/docs:rag-vectors`
 
