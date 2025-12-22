@@ -1,6 +1,6 @@
 [project]
 name = "aidocs"
-version = "0.12.0"
+version = "0.12.1"
 description = "AI-powered documentation generator for web applications. Install docs commands into your Claude Code project."
 readme = "README.md"
 license = { text = "MIT" }
