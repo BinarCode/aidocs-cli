@@ -459,7 +459,18 @@ If `{docs_root}/.auth` exists and contains credentials:
    Continuing without screenshots.
 ```
 
-### 6.3 Navigate to UI Page
+### 6.3 Set Viewport Size
+
+**IMPORTANT:** Always set a consistent viewport size before capturing screenshots:
+
+```javascript
+// Use browser_resize to set viewport
+await page.setViewportSize({ width: 1440, height: 900 });
+```
+
+This ensures consistent positioning of highlight elements.
+
+### 6.4 Navigate to UI Page
 
 Navigate to the page where the flow is initiated:
 
@@ -470,17 +481,122 @@ Navigate to the page where the flow is initiated:
    Waiting for network idle...
 ```
 
-### 6.4 Capture Screenshots
+### 6.5 Apply Spotlight Highlight (When Appropriate)
 
-Capture relevant screenshots:
+**Use highlights strategically - only for interactive elements the user needs to find or click.**
 
-**Screenshot 1: Page with trigger element**
+**WHEN TO USE highlights:**
+- Buttons the user needs to click
+- Form fields the user needs to fill
+- Links or menu items to navigate
+- Specific UI elements in a multi-step flow
+
+**WHEN NOT TO use highlights:**
+- Overview/context screenshots showing the full page
+- Informational screens with no specific action
+- Dashboard views meant to show layout
+- Screenshots that are purely illustrative
+
+The spotlight effect:
+- Darkens the entire page with a semi-transparent overlay
+- Creates a "cutout" around the highlighted element
+- Adds a white glowing border for visibility
+
+**Use `browser_run_code` with this pattern:**
+
+```javascript
+async (page) => {
+  // Clear any existing highlights
+  await page.evaluate(() => {
+    document.querySelectorAll('[data-doc-highlight]').forEach(el => el.remove());
+  });
+
+  // Get the element to highlight
+  const element = page.getByRole('button', { name: 'Import Payments' });
+  const box = await element.boundingBox();
+  if (!box) return 'Element not found';
+
+  // Apply spotlight effect
+  await page.evaluate((rect) => {
+    // Dark overlay with cutout
+    const spotlight = document.createElement('div');
+    spotlight.setAttribute('data-doc-highlight', 'true');
+    spotlight.style.cssText = `
+      position: fixed;
+      left: ${rect.x - 8}px;
+      top: ${rect.y - 8}px;
+      width: ${rect.width + 16}px;
+      height: ${rect.height + 16}px;
+      border-radius: 8px;
+      z-index: 999999;
+      pointer-events: none;
+      box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.6);
+    `;
+
+    // White glow border
+    const glow = document.createElement('div');
+    glow.setAttribute('data-doc-highlight', 'true');
+    glow.style.cssText = `
+      position: fixed;
+      left: ${rect.x - 4}px;
+      top: ${rect.y - 4}px;
+      width: ${rect.width + 8}px;
+      height: ${rect.height + 8}px;
+      border-radius: 6px;
+      border: 3px solid rgba(255, 255, 255, 0.9);
+      z-index: 1000000;
+      pointer-events: none;
+      box-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+    `;
+
+    document.body.appendChild(spotlight);
+    document.body.appendChild(glow);
+  }, box);
+
+  return 'Spotlight applied';
+}
 ```
-📸 Capturing: Payroll page with Import button
-   Looking for: button containing "Import"
-   Found: "Import Payments" button
 
-   Saved: {docs_root}/flows/images/import-payments-trigger.png
+**Highlight utility reference:** See `{docs_root}/highlight-utils.js` for templates.
+
+### 6.6 Capture Screenshots
+
+For each step in the flow:
+1. Navigate to the appropriate page/state
+2. Decide: Is this an action step or informational?
+   - **Action step** → Apply spotlight highlight to the interactive element
+   - **Informational** → Take clean screenshot without highlights
+3. Take screenshot
+4. Clear any highlights before next screenshot
+
+**Screenshot 1: Overview (no highlight needed)**
+```
+📸 Capturing: Payroll page overview
+   Type: Informational - showing page context
+   Highlight: None
+
+   Saved: {docs_root}/flows/images/payroll-overview.png
+```
+
+**Screenshot 2: Action step (with highlight)**
+```
+📸 Capturing: Import button location
+   Type: Action - user needs to click this
+   Applying spotlight to: "Import Payments" button
+
+   Saved: {docs_root}/flows/images/import-payments-button.png
+```
+
+**IMPORTANT: Screenshot Output Directory**
+Always save screenshots to `{docs_root}/flows/images/` within the project, NOT to `.playwright-mcp/` or other temporary directories.
+
+Use the `filename` parameter with `browser_take_screenshot`:
+```javascript
+// Correct - saves to project docs folder
+{ filename: "{docs_root}/flows/images/screenshot-name.png" }
+
+// Wrong - saves to temporary playwright folder
+{ filename: ".playwright-mcp/{docs_root}/flows/images/screenshot-name.png" }
 ```
 
 **Screenshot 2: Modal/Form (if applicable)**
@@ -488,20 +604,35 @@ Capture relevant screenshots:
 📸 Capturing: Import modal/form
    Clicking: "Import Payments" button
    Waiting for: modal or form
+   Applying spotlight to: file upload field
 
    Saved: {docs_root}/flows/images/import-payments-form.png
 ```
 
-### 6.5 Screenshot Summary
+### 6.7 Clear Highlights Between Screenshots
+
+**IMPORTANT:** Always clear highlights before adding new ones:
+
+```javascript
+() => {
+  document.querySelectorAll('[data-doc-highlight]').forEach(el => el.remove());
+  return 'Cleared';
+}
+```
+
+### 6.8 Screenshot Summary
 
 ```
 📸 Screenshots captured:
 
-  1. import-payments-trigger.png
-     └── Payroll page showing "Import Payments" button
+  1. payroll-overview.png
+     └── Payroll page context (no highlight)
 
-  2. import-payments-form.png
-     └── Import modal with file upload field
+  2. import-payments-button.png
+     └── "Import Payments" button highlighted (action step)
+
+  3. import-payments-form.png
+     └── File upload field highlighted (action step)
 
 Screenshots saved to: {docs_root}/flows/images/
 ```
