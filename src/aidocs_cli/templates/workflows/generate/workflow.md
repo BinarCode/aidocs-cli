@@ -36,7 +36,7 @@ If no config exists, use sensible defaults and suggest running `/docs:init` firs
 
 Check `auth.method` in config:
 
-1. **method: "file"** → Read from `.docs-auth`:
+1. **method: "file"** → Read from `docs/.auth`:
    ```yaml
    username: "user@example.com"
    password: "secretpassword"
@@ -53,7 +53,7 @@ Check `auth.method` in config:
 
 **Priority order:**
 1. `--auth` flag (highest)
-2. `.docs-auth` file
+2. `docs/.auth` file
 3. Environment variables
 4. Prompt user (lowest)
 

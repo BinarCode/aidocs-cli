@@ -91,9 +91,9 @@ def install_docs_module(
 
 
 def update_gitignore(target_dir: Path) -> None:
-    """Add .docs-auth to .gitignore if not present."""
+    """Add docs/.auth to .gitignore if not present."""
     gitignore_path = target_dir / ".gitignore"
-    docs_auth_entry = ".docs-auth"
+    docs_auth_entry = "docs/.auth"
 
     if gitignore_path.exists():
         content = gitignore_path.read_text()

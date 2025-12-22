@@ -140,7 +140,7 @@ Does your app require authentication to access most pages?
 
 ```
 Would you like to store credentials for documentation generation?
-(These will be saved in .docs-auth which is automatically gitignored)
+(These will be saved in docs/.auth which is automatically gitignored)
 
 1. Yes - I'll provide credentials now
 2. No - I'll pass credentials manually each time
@@ -241,7 +241,7 @@ urls:
 auth:
   required: {true|false|mixed}
   # How credentials are provided:
-  # - "file": Read from .docs-auth (gitignored)
+  # - "file": Read from docs/.auth (gitignored)
   # - "env": Read from environment variables
   # - "manual": Pass via --auth flag each time
   method: "{file|env|manual}"
@@ -301,11 +301,11 @@ patterns:
 
 ## STEP 5: CREATE SUPPORTING FILES
 
-### 5.1 Create .docs-auth (if credentials provided)
+### 5.1 Create docs/.auth (if credentials provided)
 
 **Only create if user chose to store credentials in file.**
 
-Create file: `.docs-auth`
+Create file: `docs/.auth`
 
 ```yaml
 # Documentation Authentication Credentials
@@ -319,23 +319,23 @@ password: "{provided_password}"
 **Immediately add to .gitignore:**
 
 Check if `.gitignore` exists:
-- If yes: Append `.docs-auth` if not already present
-- If no: Create `.gitignore` with `.docs-auth`
+- If yes: Append `docs/.auth` if not already present
+- If no: Create `.gitignore` with `docs/.auth`
 
 ```
 # Documentation credentials (do not commit)
-.docs-auth
+docs/.auth
 ```
 
 Display security reminder:
 ```
-🔒 Credentials saved to .docs-auth (gitignored)
+🔒 Credentials saved to docs/.auth (gitignored)
    Never commit this file to version control!
 ```
 
-### 5.2 Create .docsignore (optional patterns to skip)
+### 5.2 Create docs/.ignore (optional patterns to skip)
 
-Create file: `.docsignore`
+Create file: `docs/.ignore`
 
 ```
 # Pages to skip during documentation generation
@@ -466,11 +466,11 @@ Generate documentation using Claude Code:
 
 📄 Created files:
    - docs/config.yml    (main configuration)
-   - .docsignore         (pages to skip)
+   - docs/.ignore         (pages to skip)
    - {output_dir}/index.md  (documentation homepage)
    - {output_dir}/images/   (screenshots folder)
    {if credentials saved}
-   - .docs-auth          (credentials - gitignored)
+   - docs/.auth          (credentials - gitignored)
    {/if}
 
 📋 Your settings:

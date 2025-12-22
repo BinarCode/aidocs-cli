@@ -579,7 +579,7 @@ output:
 
 | Method | Description |
 |--------|-------------|
-| `file` | Credentials stored in `.docs-auth` (gitignored) |
+| `file` | Credentials stored in `docs/.auth` (gitignored) |
 | `env` | Read from `DOCS_AUTH_USER` and `DOCS_AUTH_PASS` |
 | `manual` | Pass `--auth user:pass` each time |
 
