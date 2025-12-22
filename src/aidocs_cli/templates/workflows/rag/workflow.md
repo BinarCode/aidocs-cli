@@ -16,10 +16,10 @@ description: Setup RAG (Retrieval Augmented Generation) for your documentation i
 ```
 /docs:rag
     │
-    ├──→ STEP 1: Check/create chunks (aidocs chunk)
+    ├──→ STEP 1: Check/create chunks (aidocs rag-chunks)
     ├──→ STEP 2: Generate database migration (/docs:vector-init)
     ├──→ STEP 3: Prompt user to run migration
-    └──→ STEP 4: Generate embeddings and SQL (/docs:sync)
+    └──→ STEP 4: Generate embeddings and SQL (aidocs rag-vectors)
 ```
 
 ---
@@ -77,12 +77,12 @@ Look for `docs/.chunks/manifest.json`:
 ```
 📦 Creating chunks...
 
-Running: aidocs chunk
+Running: aidocs rag-chunks
 ```
 
 Execute the chunk command:
 ```bash
-aidocs chunk
+aidocs rag-chunks
 ```
 
 Display the output and wait for completion.
@@ -203,7 +203,7 @@ Type 'yes' to continue, or 'skip' if you'll run it later.
 ```
 ⏭️  Skipping embedding generation.
 
-Run /docs:sync later after creating the table.
+Run `aidocs rag-vectors` later after creating the table.
 
 📋 Summary so far:
   ✓ Documentation chunks created
@@ -213,7 +213,7 @@ Run /docs:sync later after creating the table.
 
 Next steps:
   1. Run your migration command
-  2. Run /docs:sync to generate embeddings
+  2. Run `aidocs rag-vectors` to generate embeddings
 ```
 
 Stop here.
@@ -240,27 +240,25 @@ Look for `OPENAI_API_KEY` environment variable.
 Set the environment variable:
   export OPENAI_API_KEY=sk-...
 
-Then run /docs:sync to generate embeddings.
+Then run `aidocs rag-vectors` to generate embeddings.
 ```
 
 Stop here.
 
-### 4.2 Run Sync Workflow
+### 4.2 Run Embedding Generation
 
-**Execute /docs:sync workflow inline:**
+Execute the CLI command:
 
+```bash
+aidocs rag-vectors
 ```
-🔄 Generating embeddings...
-```
-
-LOAD and EXECUTE the full workflow from @.claude/workflows/docs/sync/workflow.md
 
 This will:
-1. Read chunk files
+1. Read chunk files from `docs/.chunks/manifest.json`
 2. Generate embeddings via OpenAI API
-3. Create `docs/.chunks/sync.sql`
+3. Create `docs/.chunks/sync.sql` with INSERT statements
 
-Display the output from the sync workflow.
+Display the output from the command.
 
 ---
 
@@ -289,7 +287,7 @@ Display the output from the sync workflow.
 💡 Tips:
    • After updating docs, run: /docs:rag --skip-migration
    • For full re-sync: /docs:rag --force
-   • To sync only: /docs:sync
+   • To sync only: aidocs rag-vectors
 ```
 
 ---
@@ -349,7 +347,7 @@ Remove --dry to execute.
 ```bash
 /docs:rag --skip-migration
 # or just:
-/docs:sync
+aidocs rag-vectors
 ```
 
 ### Force Full Re-sync

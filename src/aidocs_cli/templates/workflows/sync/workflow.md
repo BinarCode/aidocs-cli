@@ -7,304 +7,106 @@ description: Generate embeddings and SQL for syncing documentation to PostgreSQL
 
 **Goal:** Generate embeddings for documentation chunks and create a SQL script for importing to PostgreSQL.
 
-**Your Role:** You are a sync coordinator. You will read chunk files, call OpenAI for embeddings, and generate a SQL script.
+**This workflow is now implemented as a CLI command.** Run:
 
-**Requires:**
-- `docs/.chunks/manifest.json` from `aidocs chunk`
-- Environment variable `OPENAI_API_KEY`
-
----
-
-## ARGUMENTS PARSING
-
-Parse the arguments:
-```
-/docs:sync [--dry] [--force]
-```
-
-Examples:
-```
-/docs:sync                    # Generate sync SQL (smart)
-/docs:sync --dry              # Preview what would be synced
-/docs:sync --force            # Re-sync all (ignore last-sync)
+```bash
+aidocs rag-vectors
 ```
 
 ---
 
-## STEP 1: CHECK PREREQUISITES
+## CLI COMMAND USAGE
 
-### 1.1 Verify Chunks Exist
-
-Check if `docs/.chunks/manifest.json` exists:
-
-```
-🔍 Checking for chunked documentation...
-
-□ Manifest file    → Looking for docs/.chunks/manifest.json
-```
-
-If not found:
-```
-❌ No chunked documentation found.
-
-Run `aidocs chunk` first to create chunk files.
-```
-
-### 1.2 Load Manifest
-
-Read `docs/.chunks/manifest.json`:
-
-```
-✓ Manifest found
-
-Files tracked: 8
-Last chunked: 2024-01-15 10:30:00
-```
-
-### 1.3 Check OpenAI API Key
-
-Verify `OPENAI_API_KEY` is set:
-
-```
-✓ OpenAI API key configured
-```
-
-If not found:
-```
-❌ OPENAI_API_KEY not set.
-
-Set the environment variable:
-   export OPENAI_API_KEY=sk-...
+```bash
+aidocs rag-vectors                    # Generate sync SQL (smart)
+aidocs rag-vectors --dry              # Preview what would be synced
+aidocs rag-vectors --force            # Re-sync all (ignore last-sync)
+aidocs rag-vectors --table my_docs    # Custom table name
 ```
 
 ---
 
-## STEP 2: DETERMINE CHANGES
+## PREREQUISITES
 
-### 2.1 Load Last Sync State
+1. **Chunks must exist:** Run `aidocs rag-chunks` first
+2. **OpenAI API key:** Set `OPENAI_API_KEY` environment variable
 
-Read `docs/.chunks/last-sync.json` (if exists):
+---
 
-```json
-{
-  "synced_at": "2024-01-15T10:30:00Z",
-  "files": {
-    "docs/users/lifecycle.md": "sha256:abc123..."
-  }
-}
-```
+## WHAT IT DOES
 
-### 2.2 Compare with Manifest
+1. Reads `docs/.chunks/manifest.json` for chunk file locations
+2. Compares against `docs/.chunks/last-sync.json` to find changes
+3. Generates embeddings via OpenAI API (only for new/changed chunks)
+4. Creates `docs/.chunks/sync.sql` with INSERT statements
+5. Updates `docs/.chunks/last-sync.json` with synced file hashes
 
-For each file in manifest, compare hashes:
+---
 
-```
-📊 Analyzing changes...
+## SMART SYNC
 
-Unchanged (skip embeddings):
-  ○ docs/users/lifecycle.md
-  ○ docs/users/index.md
+The command is incremental:
 
-Changed (re-generate embeddings):
-  ↻ docs/campaigns/lifecycle.md (3 chunks)
+- **Unchanged files** → Skip (no API calls)
+- **Changed files** → Re-generate embeddings
+- **New files** → Generate embeddings
+- **Deleted files** → Add DELETE statements
 
-New (generate embeddings):
-  + docs/orders/lifecycle.md (5 chunks)
-  + docs/orders/index.md (2 chunks)
+---
 
-Deleted (remove from DB):
-  - docs/old-page/removed.md
-```
-
-### 2.3 Calculate Stats
+## OUTPUT
 
 ```
-📊 Sync Summary:
-   Unchanged: 2 files (skipped)
-   Changed: 1 file (3 chunks)
-   New: 2 files (7 chunks)
-   Deleted: 1 file
+✅ Embeddings generated!
 
-   Embeddings to generate: 10
-   Estimated tokens: ~5,000
-   Estimated cost: ~$0.002
+Files synced: 3
+Files deleted: 0
+Embeddings: 10
+Tokens used: ~4,832
+
+SQL file: docs/.chunks/sync.sql
+
+Import to database:
+  psql $DATABASE_URL -f docs/.chunks/sync.sql
 ```
 
 ---
 
-## STEP 3: DRY RUN (if --dry)
+## SQL FORMAT
 
-If `--dry` flag provided:
-
-```
-📋 DRY RUN - Preview Only
-
-Would generate embeddings for 10 chunks
-Would create SQL with:
-  - 1 DELETE statement (for deleted file)
-  - 1 DELETE statement (for changed file)
-  - 10 INSERT statements
-
-No files written.
-Run without --dry to generate sync.sql
-```
-
-Exit here if dry run.
-
----
-
-## STEP 4: GENERATE EMBEDDINGS
-
-### 4.1 Read Chunk Files
-
-For each new/changed file, read its `.chunks.json`:
-
-```
-📚 Loading chunks...
-
-  docs/campaigns/lifecycle.chunks.json (3 chunks)
-  docs/orders/lifecycle.chunks.json (5 chunks)
-  docs/orders/index.chunks.json (2 chunks)
-
-Total: 10 chunks to embed
-```
-
-### 4.2 Call OpenAI Embeddings API
-
-For each chunk, call OpenAI API:
-
-```
-🔄 Generating embeddings...
-
-  [1/10] docs/campaigns/lifecycle.md#Overview
-  [2/10] docs/campaigns/lifecycle.md#Creating
-  [3/10] docs/campaigns/lifecycle.md#Editing
-  ...
-  [10/10] docs/orders/index.md#Related
-
-✓ All embeddings generated
-  Tokens used: 4,832
-  Cost: $0.0019
-```
-
-**API Call Template:**
-
-Use WebFetch to call OpenAI:
-```
-POST https://api.openai.com/v1/embeddings
-Headers:
-  Authorization: Bearer $OPENAI_API_KEY
-  Content-Type: application/json
-
-Body:
-{
-  "model": "text-embedding-3-small",
-  "input": "chunk content here..."
-}
-```
-
----
-
-## STEP 5: GENERATE SQL SCRIPT
-
-### 5.1 Create SQL File
-
-Generate `docs/.chunks/sync.sql`:
+The generated SQL uses transactions:
 
 ```sql
 -- Documentation Sync SQL
--- Generated by /docs:sync at 2024-01-15T11:00:00Z
--- Run with: psql $DATABASE_URL -f docs/.chunks/sync.sql
+-- Generated by aidocs rag-vectors at 2024-01-15T11:00:00Z
 
 BEGIN;
 
--- Delete chunks for removed files
-DELETE FROM doc_embeddings WHERE file_path = 'docs/old-page/removed.md';
+-- Delete removed/changed file chunks
+DELETE FROM doc_embeddings WHERE file_path = 'docs/old-page.md';
 
--- Delete chunks for changed files (will re-insert below)
-DELETE FROM doc_embeddings WHERE file_path = 'docs/campaigns/lifecycle.md';
-
--- Insert new/updated chunks
-INSERT INTO doc_embeddings (file_path, content, chunk_index, title, metadata, file_hash, embedding)
+-- Insert new chunks
+INSERT INTO doc_embeddings (file_path, content, chunk_index, title, metadata, embedding)
 VALUES (
   'docs/campaigns/lifecycle.md',
-  'This guide covers the complete lifecycle of a campaign...',
+  'Content here...',
   0,
   'Overview',
-  '{"hierarchy": ["Campaigns", "Lifecycle"], "has_code": false, "has_images": true}'::jsonb,
-  'sha256:def456...',
-  '[0.0023, -0.0145, 0.0089, ...]'::vector
+  '{"hierarchy": ["Campaigns", "Lifecycle"]}'::jsonb,
+  '[0.0023, -0.0145, ...]'::vector
 );
-
-INSERT INTO doc_embeddings (file_path, content, chunk_index, title, metadata, file_hash, embedding)
-VALUES (
-  'docs/campaigns/lifecycle.md',
-  '## Creating a Campaign\n\nFrom the campaigns list...',
-  1,
-  'Creating a Campaign',
-  '{"hierarchy": ["Campaigns", "Lifecycle", "Creating a Campaign"], "has_code": false, "has_images": true}'::jsonb,
-  'sha256:def456...',
-  '[0.0045, -0.0178, 0.0112, ...]'::vector
-);
-
--- ... more INSERT statements
 
 COMMIT;
-
--- Summary:
--- Deleted: 2 file(s)
--- Inserted: 10 chunk(s)
-```
-
-### 5.2 SQL Formatting Notes
-
-- Escape single quotes in content: `'` → `''`
-- Format embedding as vector: `'[0.001, 0.002, ...]'::vector`
-- Format metadata as JSONB: `'{...}'::jsonb`
-- Use transaction (BEGIN/COMMIT) for atomicity
-
----
-
-## STEP 6: UPDATE LAST-SYNC
-
-Create/update `docs/.chunks/last-sync.json`:
-
-```json
-{
-  "synced_at": "2024-01-15T11:00:00Z",
-  "files": {
-    "docs/users/lifecycle.md": "sha256:abc123...",
-    "docs/users/index.md": "sha256:bcd234...",
-    "docs/campaigns/lifecycle.md": "sha256:def456...",
-    "docs/orders/lifecycle.md": "sha256:efg567...",
-    "docs/orders/index.md": "sha256:fgh678..."
-  }
-}
 ```
 
 ---
 
-## STEP 7: COMPLETION
+## EMBEDDING MODEL
 
-```
-✅ Sync SQL Generated
-
-📄 Output: docs/.chunks/sync.sql
-
-📊 Summary:
-   Embeddings generated: 10
-   DELETE statements: 2
-   INSERT statements: 10
-   Tokens used: 4,832
-   Estimated cost: $0.002
-
-📋 Next step:
-   Run the SQL to update your database:
-
-   psql $DATABASE_URL -f docs/.chunks/sync.sql
-
-   Or copy and run in your preferred SQL client.
-```
+Using `text-embedding-3-small`:
+- 1536 dimensions
+- ~$0.02 per 1M tokens
+- Good balance of quality/cost
 
 ---
 
@@ -312,35 +114,7 @@ Create/update `docs/.chunks/last-sync.json`:
 
 | Error | Action |
 |-------|--------|
-| No manifest | Prompt to run `aidocs chunk` first |
+| No manifest | Prompt to run `aidocs rag-chunks` first |
 | No API key | Show how to set OPENAI_API_KEY |
-| API rate limit | Wait and retry with backoff |
+| API rate limit | Automatic retry with backoff |
 | API error | Show error, suggest checking key/quota |
-| Empty chunks | Skip with warning |
-
----
-
-## NOTES
-
-### Embedding Model
-
-Using `text-embedding-3-small`:
-- 1536 dimensions
-- ~$0.02 per 1M tokens
-- Good balance of quality/cost
-
-### Incremental Sync
-
-The workflow only generates embeddings for:
-- New files (not in last-sync.json)
-- Changed files (hash differs from last-sync.json)
-
-Unchanged files are skipped to save API costs.
-
-### Manual SQL Execution
-
-SQL is generated as a file rather than executed directly because:
-- No DB connection needed from Claude
-- User can review before running
-- Works with any PostgreSQL setup
-- Easy to modify if needed

@@ -189,15 +189,15 @@ aidocs update --github     # Update from GitHub (latest)
 
 Automatically detects and uses the appropriate package manager (uv, pipx, or pip).
 
-### `aidocs chunk`
+### `aidocs rag-chunks`
 
 Chunk markdown files for vector database import.
 
 ```bash
-aidocs chunk                   # Chunk all files in docs/
-aidocs chunk docs/users        # Chunk specific directory
-aidocs chunk --force           # Re-chunk all files
-aidocs chunk --dry             # Preview only
+aidocs rag-chunks                   # Chunk all files in docs/
+aidocs rag-chunks docs/users        # Chunk specific directory
+aidocs rag-chunks --force           # Re-chunk all files
+aidocs rag-chunks --dry             # Preview only
 ```
 
 **Options:**
@@ -225,7 +225,48 @@ docs/
     └── manifest.json            # Tracking file
 ```
 
-**Next step:** Run `/docs:sync` to generate embeddings and SQL
+**Next step:** Run `aidocs rag-vectors` to generate embeddings
+
+### `aidocs rag-vectors`
+
+Generate embeddings and SQL for vector database import.
+
+```bash
+aidocs rag-vectors                  # Generate embeddings and SQL
+aidocs rag-vectors --dry            # Preview what would be synced
+aidocs rag-vectors --force          # Re-sync all files
+aidocs rag-vectors --table my_docs  # Custom table name
+```
+
+**Options:**
+| Option | Description |
+|--------|-------------|
+| `--force, -f` | Re-sync all files (ignore last sync) |
+| `--dry` | Preview without generating embeddings |
+| `--table, -t` | Target table name (default: `doc_embeddings`) |
+
+**Requires:** `OPENAI_API_KEY` environment variable
+
+**What it does:**
+1. Reads chunk files from `docs/.chunks/`
+2. Calls OpenAI API to generate embeddings (text-embedding-3-small)
+3. Creates `docs/.chunks/sync.sql` with INSERT statements
+4. Tracks sync state to avoid re-processing unchanged files
+
+**Output:** `docs/.chunks/sync.sql`
+
+```sql
+BEGIN;
+INSERT INTO doc_embeddings (file_path, content, chunk_index, title, metadata, embedding)
+VALUES ('docs/users/lifecycle.md', '...', 0, 'Overview', '{...}'::jsonb, '[0.001, ...]'::vector);
+-- ... more inserts
+COMMIT;
+```
+
+**Import to database:**
+```bash
+psql $DATABASE_URL -f docs/.chunks/sync.sql
+```
 
 ## Slash Commands
 
@@ -529,7 +570,7 @@ Generate embeddings and SQL for syncing documentation to a PostgreSQL vector dat
 ```
 
 **Prerequisites:**
-- Run `aidocs chunk` first to create chunk files
+- Run `aidocs rag-chunks` first to create chunk files
 - Set `OPENAI_API_KEY` environment variable
 
 **What it does:**
@@ -616,10 +657,10 @@ npx prisma migrate dev       # Prisma
 python manage.py migrate     # Django
 
 # 3. Chunk your docs
-aidocs chunk
+aidocs rag-chunks
 
 # 4. Generate embeddings and sync
-/docs:sync
+aidocs rag-vectors
 ```
 
 ### `/docs:rag`
@@ -634,10 +675,10 @@ aidocs chunk
 ```
 
 **What it does automatically:**
-1. Checks/creates documentation chunks (`aidocs chunk`)
+1. Checks/creates documentation chunks (`aidocs rag-chunks`)
 2. Generates database migration (`/docs:vector-init`)
 3. Prompts you to run the migration
-4. Generates embeddings and SQL (`/docs:sync`)
+4. Generates embeddings and SQL (`aidocs rag-vectors`)
 
 **Output:**
 ```

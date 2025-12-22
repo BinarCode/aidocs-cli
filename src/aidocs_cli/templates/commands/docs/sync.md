@@ -8,14 +8,15 @@ description: Generate embeddings and SQL for syncing docs to vector DB
 Generate embeddings and SQL script for importing documentation chunks to PostgreSQL.
 
 **Usage:**
-```
-/docs:sync                    # Generate sync SQL
-/docs:sync --dry              # Preview what would be synced
-/docs:sync --force            # Re-sync all (ignore last-sync)
+```bash
+aidocs rag-vectors                    # Generate sync SQL
+aidocs rag-vectors --dry              # Preview what would be synced
+aidocs rag-vectors --force            # Re-sync all (ignore last-sync)
+aidocs rag-vectors --table my_docs    # Custom table name
 ```
 
 **Prerequisites:**
-- Run `aidocs chunk` first to create .chunks.json files
+- Run `aidocs rag-chunks` first to create .chunks.json files
 - Set `OPENAI_API_KEY` environment variable
 
 **What it does:**
@@ -26,7 +27,7 @@ Generate embeddings and SQL script for importing documentation chunks to Postgre
 
 **Output:**
 ```
-📊 Sync Analysis:
+📊 Sync Summary:
    Unchanged: 12 files (skipped)
    Changed: 2 files (8 chunks)
    New: 1 file (3 chunks)
@@ -39,4 +40,7 @@ Run with:
 
 ---
 
-**Execute workflow:** `@.claude/workflows/docs/sync/workflow.md`
+**Run the CLI command:**
+```bash
+aidocs rag-vectors
+```

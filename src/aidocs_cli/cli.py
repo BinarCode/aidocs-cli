@@ -12,6 +12,7 @@ from rich.panel import Panel
 
 from . import __version__
 from .chunker import chunk_directory
+from .embeddings import generate_sync_sql, get_openai_api_key
 from .installer import check_tools, install_docs_module
 
 console = Console()
@@ -223,8 +224,8 @@ def update(
         raise typer.Exit(1)
 
 
-@app.command()
-def chunk(
+@app.command("rag-chunks")
+def rag_chunks(
     docs_dir: Optional[str] = typer.Argument(
         "docs",
         help="Directory containing markdown files to chunk.",
@@ -247,10 +248,10 @@ def chunk(
     alongside each .md file. Tracks changes via manifest.json.
 
     Examples:
-        aidocs chunk                  # Chunk all files in docs/
-        aidocs chunk docs/users       # Chunk specific directory
-        aidocs chunk --force          # Re-chunk all files
-        aidocs chunk --dry            # Preview only
+        aidocs rag-chunks                  # Chunk all files in docs/
+        aidocs rag-chunks docs/users       # Chunk specific directory
+        aidocs rag-chunks --force          # Re-chunk all files
+        aidocs rag-chunks --dry            # Preview only
     """
     target_dir = Path(docs_dir)
 
@@ -301,11 +302,134 @@ def chunk(
                 f"Skipped: {stats['skipped']} unchanged files\n"
                 f"Created: {stats['chunks_created']} chunks\n\n"
                 f"[dim]Manifest saved to {docs_dir}/.chunks/manifest.json[/dim]\n"
-                f"[dim]Run /docs:sync to generate embeddings and SQL.[/dim]",
+                f"[dim]Run [cyan]aidocs rag-vectors[/cyan] to generate embeddings.[/dim]",
                 title="Success",
                 border_style="green",
             ))
 
+    except Exception as e:
+        console.print(f"[red]Error: {e}[/red]")
+        raise typer.Exit(1)
+
+
+@app.command("rag-vectors")
+def rag_vectors(
+    docs_dir: Optional[str] = typer.Argument(
+        "docs",
+        help="Directory containing chunked documentation.",
+    ),
+    force: bool = typer.Option(
+        False,
+        "--force",
+        "-f",
+        help="Re-sync all files (ignore last sync state).",
+    ),
+    dry: bool = typer.Option(
+        False,
+        "--dry",
+        help="Preview what would be synced without generating embeddings.",
+    ),
+    table: str = typer.Option(
+        "doc_embeddings",
+        "--table",
+        "-t",
+        help="Target table name in PostgreSQL.",
+    ),
+) -> None:
+    """Generate embeddings and SQL for vector DB import.
+
+    Reads chunk files, calls OpenAI API to generate embeddings,
+    and creates a SQL file for importing into PostgreSQL with pgvector.
+
+    Requires OPENAI_API_KEY environment variable.
+
+    Examples:
+        aidocs rag-vectors                  # Generate embeddings and SQL
+        aidocs rag-vectors --dry            # Preview only
+        aidocs rag-vectors --force          # Re-sync all files
+        aidocs rag-vectors --table my_docs  # Custom table name
+    """
+    target_dir = Path(docs_dir)
+
+    if not target_dir.exists():
+        console.print(f"[red]Error: Directory not found: {docs_dir}[/red]")
+        raise typer.Exit(1)
+
+    # Check for API key (unless dry run)
+    if not dry and not get_openai_api_key():
+        console.print(Panel.fit(
+            "[red]OPENAI_API_KEY not set[/red]\n\n"
+            "Set the environment variable:\n"
+            "  [cyan]export OPENAI_API_KEY=sk-...[/cyan]\n\n"
+            "Or run with [cyan]--dry[/cyan] to preview.",
+            title="Error",
+            border_style="red",
+        ))
+        raise typer.Exit(1)
+
+    mode = "[yellow]DRY RUN[/yellow] - " if dry else ""
+    console.print(f"{mode}[blue]Generating embeddings for {docs_dir}...[/blue]")
+    console.print()
+
+    # Progress callback
+    def on_progress(current: int, total: int, message: str) -> None:
+        console.print(f"  [{current + 1}/{total}] {message}")
+
+    def on_status(message: str) -> None:
+        console.print(f"[dim]{message}[/dim]")
+
+    try:
+        result = generate_sync_sql(
+            target_dir,
+            force=force,
+            dry=dry,
+            table_name=table,
+            on_progress=on_progress if not dry else None,
+            on_status=on_status,
+        )
+
+        if not result["success"]:
+            console.print(f"[red]Error: {result.get('error', 'Unknown error')}[/red]")
+            raise typer.Exit(1)
+
+        stats = result["stats"]
+        console.print()
+
+        if dry:
+            console.print(Panel.fit(
+                f"[yellow]DRY RUN - No embeddings generated[/yellow]\n\n"
+                f"Unchanged: {stats.get('unchanged', 0)} files (would skip)\n"
+                f"To sync: {stats.get('to_sync', 0)} files\n"
+                f"To delete: {stats.get('to_delete', 0)} files\n"
+                f"Total chunks: {stats.get('total_chunks', 0)}\n\n"
+                f"Estimated cost: ${stats.get('estimated_cost', 0):.4f}\n\n"
+                f"[dim]Run without --dry to generate embeddings.[/dim]",
+                title="Preview",
+                border_style="yellow",
+            ))
+        elif result.get("message"):
+            console.print(Panel.fit(
+                f"[green]{result['message']}[/green]",
+                title="Up to Date",
+                border_style="green",
+            ))
+        else:
+            sql_file = result.get("sql_file", f"{docs_dir}/.chunks/sync.sql")
+            console.print(Panel.fit(
+                f"[green]Embeddings generated![/green]\n\n"
+                f"Files synced: {stats.get('to_sync', 0)}\n"
+                f"Files deleted: {stats.get('to_delete', 0)}\n"
+                f"Embeddings: {stats.get('embeddings_generated', 0)}\n"
+                f"Tokens used: ~{stats.get('tokens_used', 0):,}\n\n"
+                f"[bold]SQL file:[/bold] {sql_file}\n\n"
+                f"[dim]Import to database:[/dim]\n"
+                f"  [cyan]psql $DATABASE_URL -f {sql_file}[/cyan]",
+                title="Success",
+                border_style="green",
+            ))
+
+    except typer.Exit:
+        raise
     except Exception as e:
         console.print(f"[red]Error: {e}[/red]")
         raise typer.Exit(1)
