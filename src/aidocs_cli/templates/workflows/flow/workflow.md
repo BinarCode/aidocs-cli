@@ -1,15 +1,28 @@
 ---
 name: docs-flow
-description: Document a code flow by analyzing the codebase from a human description. Generates mermaid diagrams and code snippets.
+description: Document a code flow by analyzing the codebase from a human description. Generates mermaid diagrams, code snippets, and optional UI screenshots.
 ---
 
 # Code Flow Documentation Workflow
 
 **Goal:** Analyze the codebase to document how a specific feature or process works, based on a natural language description.
 
-**Your Role:** You are a code analyst and documentation specialist. You will search the codebase, trace execution paths, and produce clear documentation with diagrams and code snippets.
+**Your Role:** You are a code analyst and documentation specialist. You will search the codebase, trace execution paths, and produce clear documentation with diagrams, code snippets, and UI screenshots when available.
 
-**No external dependencies required** - Uses only grep, glob, and read tools.
+**Optional:** If Playwright MCP is available and a base URL is configured, screenshots of relevant UI pages will be captured.
+
+---
+
+## LOAD CONFIGURATION
+
+**First, check if `docs/config.yml` exists in the project root.**
+
+If it exists, load:
+- `urls.base` → Base URL for screenshots (e.g., `https://app.example.com`)
+- `auth.method` → How to authenticate for screenshots
+- `output.directory` → Where to save documentation
+
+Store for later use in screenshot capture step.
 
 ---
 
@@ -17,19 +30,20 @@ description: Document a code flow by analyzing the codebase from a human descrip
 
 Parse the arguments passed to this workflow. Expected format:
 ```
-/docs:flow "<description>"
+/docs:flow "<description>" [--no-screenshots]
 ```
 
 Examples:
 ```
 /docs:flow "sync users from discord"
+/docs:flow "import payments from csv"
 /docs:flow "how payments are processed"
-/docs:flow "user registration flow"
-/docs:flow "webhook handling for stripe"
+/docs:flow "webhook handling for stripe" --no-screenshots
 ```
 
 Extract:
 - `description` (required) - The natural language description of the flow
+- `--no-screenshots` (optional) - Skip UI screenshot capture
 
 If description is missing or empty, ask the user:
 ```
@@ -37,7 +51,7 @@ Please describe the flow you want to document.
 
 Examples:
   /docs:flow "sync users from discord"
-  /docs:flow "how payments are processed"
+  /docs:flow "import payments from csv"
 ```
 
 ---
@@ -52,6 +66,7 @@ From the description, identify:
 - **Action verbs**: sync, import, export, process, handle, create, send, receive, update, delete
 - **Entities/nouns**: users, payments, orders, webhooks, discord, stripe, email
 - **Technical terms**: API, webhook, queue, job, cron, scheduled
+- **UI hints**: button, page, form, modal, screen (indicates UI involvement)
 
 ### 1.2 Build Search Strategy
 
@@ -74,18 +89,30 @@ Based on the action type, prioritize directories:
 | Event | Listeners/, Events/, Subscribers/ |
 | Email | Mail/, Notifications/ |
 
+### 1.4 Detect UI Involvement
+
+Check if the flow likely has a UI component:
+- Description contains: import, export, upload, download, button, form, page
+- Action is user-initiated (not scheduled/webhook)
+
+Flag: `has_ui_component = true/false`
+
 Display progress:
 ```
-📝 Parsing: "sync users from discord"
+📝 Parsing: "import payments from csv"
 
 Extracted:
-  Action: sync (import/sync type)
-  Entities: users, discord
-  Keywords: sync, users, discord, import
+  Action: import (import/sync type)
+  Entities: payments, csv
+  Keywords: import, payments, csv, upload
 
 Search strategy:
-  Primary patterns: discord, sync.*user, SyncDiscord
-  Target directories: Jobs/, Commands/, Services/, Listeners/
+  Primary patterns: import.*payment, csv.*payment, PaymentImport
+  Target directories: Jobs/, Commands/, Services/, Controllers/
+
+UI Detection:
+  ✓ "import" suggests user-initiated action
+  ✓ May have UI trigger (button, form)
 ```
 
 ---
@@ -101,10 +128,10 @@ For each keyword, search in relevant directories:
 ```
 🔍 Searching codebase...
 
-[1/4] Searching "discord" in Jobs/, Commands/, Services/...
-[2/4] Searching "sync.*user" (case-insensitive)...
-[3/4] Searching class names with "Discord"...
-[4/4] Searching file names with "*Sync*" or "*Discord*"...
+[1/4] Searching "import.*payment" in Jobs/, Commands/, Services/...
+[2/4] Searching "csv" in Controllers/, Services/...
+[3/4] Searching class names with "Payment" and "Import"...
+[4/4] Searching file names with "*Import*" or "*Payment*"...
 ```
 
 ### 2.2 Rank Results by Relevance
@@ -122,24 +149,37 @@ Score files based on:
 
   Score  File
   ─────  ────────────────────────────────────────────
-  95%    app/Jobs/SyncDiscordUsersJob.php
-  88%    app/Services/DiscordService.php
-  75%    app/Console/Commands/SyncDiscordCommand.php
-  60%    app/Listeners/DiscordMemberJoinedListener.php
-  45%    app/Models/User.php (discord_id field)
-  40%    config/services.php (discord config)
+  95%    app/Jobs/ImportPaymentsJob.php
+  88%    app/Services/CsvPaymentImporter.php
+  75%    app/Http/Controllers/PayrollController.php
+  60%    app/Http/Requests/ImportPaymentsRequest.php
+  45%    routes/web.php (POST /payroll/import)
+  40%    resources/js/Pages/Payroll/Index.vue
 
-Analyzing top 5 files...
+Analyzing top files...
 ```
 
-### 2.4 Handle No Results
+### 2.4 Extract UI Route (for screenshots)
+
+From the found files, identify the UI route:
+
+```
+🔗 UI Route detected:
+  Route: POST /payroll/import
+  Controller: PayrollController@import
+  View: resources/js/Pages/Payroll/Index.vue
+
+  → UI Page: /payroll (where the import button lives)
+```
+
+### 2.5 Handle No Results
 
 If no relevant files found:
 ```
-⚠️  No relevant code found for: "sync users from discord"
+⚠️  No relevant code found for: "import payments from csv"
 
 Suggestions:
-  • Try different keywords: "discord import", "user sync"
+  • Try different keywords: "payment upload", "csv import"
   • Check if the feature exists in your codebase
   • Provide more specific terms
 
@@ -156,31 +196,24 @@ Read the top-ranked files and identify how the flow is triggered.
 
 Look for these patterns:
 
-**Jobs (Laravel):**
+**Controller Actions (User-initiated):**
 ```php
-class SyncDiscordUsersJob implements ShouldQueue
+public function import(ImportPaymentsRequest $request)
+```
+
+**Jobs (Background):**
+```php
+class ImportPaymentsJob implements ShouldQueue
 ```
 
 **Commands (Artisan):**
 ```php
-protected $signature = 'discord:sync-users';
+protected $signature = 'payments:import {file}';
 ```
 
-**Controllers/Routes:**
+**Routes:**
 ```php
-Route::post('/webhooks/discord', [DiscordController::class, 'handle']);
-```
-
-**Listeners:**
-```php
-class DiscordMemberJoinedListener
-{
-    public function handle(DiscordMemberJoined $event)
-```
-
-**Scheduled Tasks:**
-```php
-$schedule->job(SyncDiscordUsersJob::class)->hourly();
+Route::post('/payroll/import', [PayrollController::class, 'import']);
 ```
 
 ### 3.2 Display Entry Points
@@ -188,19 +221,20 @@ $schedule->job(SyncDiscordUsersJob::class)->hourly();
 ```
 📍 Entry points identified:
 
-1. Job: SyncDiscordUsersJob
-   └── Scheduled: hourly (app/Console/Kernel.php:23)
-   └── Manual: dispatch(new SyncDiscordUsersJob())
+1. Controller: PayrollController@import
+   └── Route: POST /payroll/import
+   └── UI: /payroll page → "Import Payments" button
+   └── Validation: ImportPaymentsRequest
 
-2. Command: discord:sync-users
-   └── Artisan: php artisan discord:sync-users
-   └── File: app/Console/Commands/SyncDiscordCommand.php
+2. Job: ImportPaymentsJob
+   └── Dispatched by: PayrollController@import
+   └── Queue: payments
 
-3. Listener: DiscordMemberJoinedListener
-   └── Event: DiscordMemberJoined
-   └── Trigger: Webhook from Discord
+3. Command: payments:import
+   └── Artisan: php artisan payments:import {file}
 
-Primary entry point: SyncDiscordUsersJob (most comprehensive)
+Primary entry point: PayrollController@import (user-initiated)
+UI Location: /payroll page
 ```
 
 ---
@@ -211,39 +245,39 @@ Starting from the primary entry point, trace the execution path.
 
 ### 4.1 Read Entry Point Code
 
-Read the main method (e.g., `handle()` for jobs/listeners, `__invoke()` for commands).
+Read the main method (controller action, handle(), etc.).
 
 ### 4.2 Build Call Graph
 
 Trace method calls and identify:
+- Request validation
 - Service/class instantiations
-- Method calls on dependencies
-- External API calls (HTTP, database, queue)
-- Events dispatched
-- Side effects (logging, notifications)
+- File processing
+- Database operations
+- Job dispatching
+- Events/notifications
 
 ### 4.3 Display Call Graph
 
 ```
-📊 Execution flow from: SyncDiscordUsersJob::handle()
+📊 Execution flow from: PayrollController@import()
 
-SyncDiscordUsersJob::handle()
-├── $this->discord->getGuildMembers()
-│   └── Http::get('/guilds/{id}/members')        [External: Discord API]
-├── foreach ($members as $member)
-│   ├── $this->mapMemberToUser($member)          [Transform]
-│   └── User::updateOrCreate(...)                [Database: upsert]
-├── event(new DiscordUsersSynced($count))        [Event]
-└── Log::info('Sync complete')                   [Logging]
-
-External calls:
-  • Discord API: GET /guilds/{guild_id}/members
+PayrollController@import(ImportPaymentsRequest $request)
+├── $request->file('csv')                           [File Upload]
+├── ImportPaymentsJob::dispatch($file)              [Queue Job]
+│   └── CsvPaymentImporter::import($file)
+│       ├── Reader::createFromPath($file)           [CSV Parse]
+│       ├── foreach ($rows as $row)
+│       │   ├── PaymentValidator::validate($row)    [Validation]
+│       │   └── Payment::create($data)              [Database]
+│       └── event(new PaymentsImported($count))     [Event]
+└── return redirect()->back()->with('success')      [Response]
 
 Database operations:
-  • users table: updateOrCreate (upsert)
+  • payments table: insert (bulk)
 
 Events dispatched:
-  • DiscordUsersSynced
+  • PaymentsImported
 ```
 
 ---
@@ -255,54 +289,139 @@ Create a sequence diagram showing the flow.
 ### 5.1 Identify Participants
 
 From the call graph, extract:
-- Trigger (Cron, User, Webhook)
-- Main class (Job, Command, Controller)
-- Services (API clients, business logic)
-- External systems (APIs, databases)
-- Side effects (Events, Notifications)
+- User/Browser (for UI-initiated flows)
+- Controller
+- Services
+- Queue/Job
+- Database
+- Events
 
 ### 5.2 Generate Diagram
 
 ```mermaid
 sequenceDiagram
-    participant Trigger as Cron/Manual
-    participant Job as SyncDiscordUsersJob
-    participant Service as DiscordService
-    participant API as Discord API
+    participant User
+    participant UI as Payroll Page
+    participant Controller as PayrollController
+    participant Job as ImportPaymentsJob
+    participant Service as CsvPaymentImporter
     participant DB as Database
-    participant Event as Event Bus
 
-    Trigger->>Job: dispatch()
-    Job->>Service: getGuildMembers()
-    Service->>API: GET /guilds/{id}/members
-    API-->>Service: members[]
-    Service-->>Job: Collection<Member>
+    User->>UI: Click "Import Payments"
+    UI->>UI: Select CSV file
+    User->>UI: Submit form
+    UI->>Controller: POST /payroll/import
+    Controller->>Controller: Validate request
+    Controller->>Job: dispatch(ImportPaymentsJob)
+    Controller-->>UI: Redirect with "Processing..."
 
-    loop Each member
-        Job->>Job: mapMemberToUser()
-        Job->>DB: User::updateOrCreate()
+    Note over Job: Background processing
+    Job->>Service: import($file)
+    Service->>Service: Parse CSV rows
+    loop Each row
+        Service->>Service: Validate row
+        Service->>DB: Payment::create()
     end
-
-    Job->>Event: DiscordUsersSynced
-    Job->>Job: Log::info()
+    Service->>Service: Dispatch PaymentsImported event
 ```
 
 ---
 
-## STEP 6: EXTRACT CODE SNIPPETS
+## STEP 6: CAPTURE UI SCREENSHOTS (Optional)
+
+**Skip this step if:**
+- `--no-screenshots` flag was provided
+- No `urls.base` configured in `docs/config.yml`
+- Playwright MCP is not available
+- No UI route was detected
+
+### 6.1 Check Playwright MCP
+
+```
+📸 Screenshot capture...
+
+Checking Playwright MCP availability...
+```
+
+If NOT available:
+```
+ℹ️  Playwright MCP not available - skipping screenshots.
+   To enable screenshots, install Playwright MCP:
+   https://github.com/anthropics/mcp-playwright
+```
+
+### 6.2 Authenticate (if needed)
+
+Load credentials from `docs/config.yml` or `docs/.auth`:
+
+```
+🔐 Authenticating...
+   Using credentials from docs/.auth
+```
+
+### 6.3 Navigate to UI Page
+
+Navigate to the page where the flow is initiated:
+
+```
+🌐 Navigating to: https://app.example.com/payroll
+
+   Loading page...
+   Waiting for network idle...
+```
+
+### 6.4 Capture Screenshots
+
+Capture relevant screenshots:
+
+**Screenshot 1: Page with trigger element**
+```
+📸 Capturing: Payroll page with Import button
+   Looking for: button containing "Import"
+   Found: "Import Payments" button
+
+   Saved: docs/flows/images/import-payments-trigger.png
+```
+
+**Screenshot 2: Modal/Form (if applicable)**
+```
+📸 Capturing: Import modal/form
+   Clicking: "Import Payments" button
+   Waiting for: modal or form
+
+   Saved: docs/flows/images/import-payments-form.png
+```
+
+### 6.5 Screenshot Summary
+
+```
+📸 Screenshots captured:
+
+  1. import-payments-trigger.png
+     └── Payroll page showing "Import Payments" button
+
+  2. import-payments-form.png
+     └── Import modal with file upload field
+
+Screenshots saved to: docs/flows/images/
+```
+
+---
+
+## STEP 7: EXTRACT CODE SNIPPETS
 
 Extract the most relevant code sections with file:line references.
 
-### 6.1 Prioritize Code Sections
+### 7.1 Prioritize Code Sections
 
 Extract in order of importance:
-1. Entry point method (handle, __invoke)
-2. Main business logic
-3. External API calls
+1. Entry point method (controller action, handle)
+2. Request validation rules
+3. Main business logic (service)
 4. Database operations
 5. Event dispatching
 
-### 6.2 Format Snippets
+### 7.2 Format Snippets
 
 For each snippet, include:
 - File path with line numbers
@@ -310,39 +429,38 @@ For each snippet, include:
 - Brief description of what it does
 
 ```php
-// app/Jobs/SyncDiscordUsersJob.php:18-35
-public function handle(DiscordService $discord): void
+// app/Http/Controllers/PayrollController.php:45-58
+public function import(ImportPaymentsRequest $request)
 {
-    $members = $discord->getGuildMembers();
+    $file = $request->file('csv');
 
-    foreach ($members as $member) {
-        User::updateOrCreate(
-            ['discord_id' => $member['user']['id']],
-            $this->mapMemberToUser($member)
-        );
-    }
+    ImportPaymentsJob::dispatch(
+        $file->store('imports'),
+        auth()->id()
+    );
 
-    event(new DiscordUsersSynced($members->count()));
+    return redirect()
+        ->back()
+        ->with('success', 'Import started. You will be notified when complete.');
 }
 ```
 
 ---
 
-## STEP 7: GENERATE DOCUMENTATION
+## STEP 8: GENERATE DOCUMENTATION
 
 Create the markdown file with all gathered information.
 
-### 7.1 Create Output Directory
+### 8.1 Create Output Directory
 
-Ensure `docs/flows/` directory exists.
+Ensure `docs/flows/` and `docs/flows/images/` directories exist.
 
-### 7.2 Generate Filename
+### 8.2 Generate Filename
 
 Convert description to kebab-case:
-- "sync users from discord" → `sync-users-from-discord.md`
-- "how payments are processed" → `how-payments-are-processed.md`
+- "import payments from csv" → `import-payments-from-csv.md`
 
-### 7.3 Write Markdown File
+### 8.3 Write Markdown File
 
 Use this template:
 
@@ -352,6 +470,20 @@ Use this template:
 ## Overview
 
 {Brief description of what this flow does, based on code analysis}
+
+## UI Location
+
+{If UI screenshots were captured}
+
+The flow is initiated from the **{Page Name}** page.
+
+![{Page Name}](./images/{screenshot-trigger}.png)
+
+Click the **"{Button Name}"** button to start the flow.
+
+{If there's a form/modal}
+
+![{Form/Modal Name}](./images/{screenshot-form}.png)
 
 ## Flow Diagram
 
@@ -365,9 +497,9 @@ Use this template:
 
 | Trigger | Location | Command/Route |
 |---------|----------|---------------|
-| Scheduled | Kernel.php | Hourly |
-| Manual | Artisan | `php artisan discord:sync-users` |
-| Event | Listener | DiscordMemberJoined |
+| UI Button | /payroll | "Import Payments" button |
+| API | POST /payroll/import | With CSV file |
+| CLI | Artisan | `php artisan payments:import {file}` |
 
 ## Step-by-Step
 
@@ -385,6 +517,15 @@ Location: `{file_path}:{line_number}`
 
 {Continue for each major step...}
 
+## Validation Rules
+
+{If request validation was found}
+
+| Field | Rules |
+|-------|-------|
+| csv | required, file, mimes:csv,txt |
+| ... | ... |
+
 ## Related Files
 
 | File | Purpose |
@@ -393,52 +534,57 @@ Location: `{file_path}:{line_number}`
 
 ## Configuration
 
-{If any config files are relevant, list them}
+{If any config files are relevant}
 
-- `config/services.php` - Discord API credentials
-- `.env` - DISCORD_TOKEN, DISCORD_GUILD_ID
+- `config/queue.php` - Queue connection for imports
+- `.env` - QUEUE_CONNECTION
 
 ## Triggers
 
-- **Scheduled**: {description}
-- **Manual**: {command}
-- **Event-driven**: {event name}
+- **UI**: Click "Import Payments" on /payroll page
+- **API**: `POST /payroll/import` with multipart form
+- **CLI**: `php artisan payments:import {file}`
 
 ---
 
 *Documentation generated by /docs:flow*
 ```
 
-### 7.4 Save File
+### 8.4 Save File
 
 Write to `docs/flows/{kebab-case-title}.md`
 
 ---
 
-## STEP 8: COMPLETION SUMMARY
+## STEP 9: COMPLETION SUMMARY
 
 Display final summary:
 
 ```
 ✅ Flow Documentation Complete
 
-📄 Output: docs/flows/sync-users-from-discord.md
+📄 Output: docs/flows/import-payments-from-csv.md
 
 📊 Analysis Summary:
    Files analyzed: 6
    Entry points found: 3
-   Code snippets: 4
+   Code snippets: 5
    Diagram: sequenceDiagram
+   Screenshots: 2
+
+📸 Screenshots captured:
+   • import-payments-trigger.png (Payroll page)
+   • import-payments-form.png (Import modal)
 
 📁 Key files documented:
-   • app/Jobs/SyncDiscordUsersJob.php
-   • app/Services/DiscordService.php
-   • app/Console/Commands/SyncDiscordCommand.php
+   • app/Http/Controllers/PayrollController.php
+   • app/Jobs/ImportPaymentsJob.php
+   • app/Services/CsvPaymentImporter.php
 
 💡 Suggestions:
    • Review the generated documentation for accuracy
    • Add any domain-specific context
-   • Consider documenting related flows
+   • Consider documenting error handling flows
 ```
 
 ---
@@ -450,8 +596,10 @@ Display final summary:
 | No description provided | Ask user for description |
 | No relevant files found | Suggest alternative keywords |
 | File read error | Skip file, note in output |
-| Circular dependencies | Break cycle, note in diagram |
-| Too many files (>20) | Limit to top 10 by relevance |
+| Playwright MCP missing | Skip screenshots, note in output |
+| Screenshot failed | Continue without screenshot, note in output |
+| Auth failed | Skip screenshots, suggest checking credentials |
+| No UI route found | Skip screenshots, document code-only |
 
 ---
 
@@ -459,6 +607,7 @@ Display final summary:
 
 - Be thorough in keyword extraction - more search terms = better results
 - Follow dependency injection to trace service calls
-- Look for interfaces/contracts that may have multiple implementations
-- Check config files for external service credentials
-- Include error handling paths if they're significant to the flow
+- Look for Request classes to find validation rules
+- Check for Vue/React components that correspond to routes
+- If a flow has both UI and CLI entry points, document both
+- Screenshots are optional but greatly improve documentation quality
