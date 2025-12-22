@@ -11,22 +11,72 @@ description: Generate documentation for a web page using Playwright MCP for brow
 
 ---
 
-## LOAD CONFIGURATION
+## STEP 0: FIND AND LOAD CONFIGURATION
 
-**First, check if `docs/config.yml` exists in the project root.**
+**CRITICAL:** Before doing anything else, locate and load the configuration file.
 
-If it exists, load it and use these values as defaults:
+### 0.1 Search for Config File
+
+Search for `aidocs-config.yml` in this order:
+1. `docs/aidocs-config.yml` (default location)
+2. `./aidocs-config.yml` (project root)
+
+**Also check for old config format:**
+If `docs/config.yml` exists but `aidocs-config.yml` doesn't:
+```
+⚠️  Found old config format: docs/config.yml
+
+Please rename it to: docs/aidocs-config.yml
+Then run this command again.
+```
+
+### 0.2 If Config Found
+
+Load the config and extract these values:
+- `docs_root` → Base directory for all documentation (default: `docs`)
 - `project.name` → Use in documentation headers
 - `style.tone` → Apply to writing style
 - `stack.frontend.path` → Default codebase path
-- `output.directory` → Default output directory
 - `urls.base` → Can construct full URLs if only path provided
 - `content.sections` → Which sections to include
 - `content.exclude` → What to filter out
 - `auth.method` → How to get credentials
 - `auth.env_user` / `auth.env_pass` → Environment variable names if method is "env"
 
-If no config exists, use sensible defaults and suggest running `/docs:init` first.
+### 0.3 If Config NOT Found
+
+Display message and STOP:
+```
+⚠️  No aidocs-config.yml found.
+
+This workflow requires a configuration file to run.
+
+Would you like to create one now?
+1. Yes - run /docs:init to set up configuration
+2. No - I'll create docs/aidocs-config.yml manually
+```
+
+**If user chooses "Yes":** Execute the `/docs:init` workflow to walk through setup.
+**If user chooses "No":** Stop and provide this minimal config template:
+
+```yaml
+# Minimal aidocs-config.yml
+docs_root: docs
+urls:
+  base: "https://your-app.com"
+auth:
+  required: false
+```
+
+**IMPORTANT:** Do NOT proceed without config. Config is required.
+
+### 0.4 Resolve Paths
+
+Once config is loaded, set these path variables:
+- `{docs_root}` → Use for all output paths (from config, default: `docs`)
+- `{docs_root}/.auth` → Credentials file location
+- `{docs_root}/{module}/` → Module documentation folder
+- `{docs_root}/{module}/images/` → Screenshots folder
 
 ---
 
@@ -36,7 +86,7 @@ If no config exists, use sensible defaults and suggest running `/docs:init` firs
 
 Check `auth.method` in config:
 
-1. **method: "file"** → Read from `docs/.auth`:
+1. **method: "file"** → Read from `{docs_root}/.auth`:
    ```yaml
    username: "user@example.com"
    password: "secretpassword"
@@ -53,7 +103,7 @@ Check `auth.method` in config:
 
 **Priority order:**
 1. `--auth` flag (highest)
-2. `docs/.auth` file
+2. `{docs_root}/.auth` file
 3. Environment variables
 4. Prompt user (lowest)
 
@@ -69,7 +119,7 @@ Parse the arguments passed to this workflow. Expected format:
 Extract:
 - `url` (required) - The URL or module name to document (can be full URL, path, or module name)
 - `auth` (optional) - Credentials in user:pass format for authenticated pages
-- `output` (optional) - Base output directory (default from config or ./docs)
+- `output` (optional) - Base output directory (default from config `docs_root`)
 - `codebase` (optional) - Path to codebase (default from config or .)
 - `skip-flows` (optional) - Skip interactive flow detection, just capture page
 - `flow` (optional) - Automatically document a specific flow (e.g., --flow "create campaign")
@@ -93,10 +143,10 @@ If input looks like a module name (no `/` prefix, no `http`):
 
 ## OUTPUT STRUCTURE
 
-**Output is organized by module name:**
+**Output is organized by module name within `{docs_root}`:**
 
 ```
-docs/
+{docs_root}/
 ├── {module}/
 │   ├── index.md          # Main page documentation
 │   └── images/
@@ -104,10 +154,10 @@ docs/
 │       └── {module}-flow-step-1.png  # Flow screenshots
 ```
 
-**Examples:**
-- `/docs:generate /projects` → `docs/projects/index.md`
-- `/docs:generate /users/settings` → `docs/users-settings/index.md`
-- `/docs:generate campaigns` → `docs/campaigns/index.md`
+**Examples (assuming `docs_root: docs`):**
+- `/docs:generate /projects` → `{docs_root}/projects/index.md`
+- `/docs:generate /users/settings` → `{docs_root}/users-settings/index.md`
+- `/docs:generate campaigns` → `{docs_root}/campaigns/index.md`
 
 **Module name extraction:**
 - From URL path: `/projects` → `projects`
@@ -164,13 +214,13 @@ https://github.com/anthropics/mcp-playwright
 Check for credentials in this priority order:
 
 1. **`--auth` flag** (highest priority): Parse `user:pass` format
-2. **`docs/.auth` file**: Read YAML credentials
+2. **`{docs_root}/.auth` file**: Read YAML credentials
 3. **Environment variables**: Check `$DOCS_AUTH_USER` and `$DOCS_AUTH_PASS`
 
-**Read `docs/.auth` if it exists:**
+**Read `{docs_root}/.auth` if it exists:**
 
 ```yaml
-# docs/.auth format:
+# {docs_root}/.auth format:
 username: "user@example.com"
 password: "secretpassword"
 login_url: "/login"  # optional, defaults to /login
@@ -180,7 +230,7 @@ login_url: "/login"  # optional, defaults to /login
 
 If credentials are found (from any source):
 
-1. Get base URL from `docs/config.yml` → `urls.base`
+1. Get base URL from config → `urls.base`
 2. Navigate to login URL: `{base_url}/login` (or custom `login_url` from `.auth`)
 3. Wait for login form to load
 4. Fill username field (look for: `input[type="email"]`, `input[name="email"]`, `#email`, `input[name="username"]`)
@@ -191,7 +241,7 @@ If credentials are found (from any source):
 
 ```
 🔐 Authenticating...
-   Reading credentials from docs/.auth
+   Reading credentials from {docs_root}/.auth
    Navigating to: https://app.example.com/login
    Filling login form...
    ✓ Logged in successfully
@@ -199,7 +249,7 @@ If credentials are found (from any source):
 
 **If login fails:**
 ```
-⚠️ Authentication failed - check credentials in docs/.auth
+⚠️ Authentication failed - check credentials in {docs_root}/.auth
    Continuing without authentication (page may show login screen)
 ```
 
@@ -215,7 +265,7 @@ Use Playwright MCP to:
 **On navigation failure:** Report the error with suggestions:
 - Check if URL is correct
 - Check network connectivity
-- Check if authentication is required (suggest adding credentials to `docs/.auth`)
+- Check if authentication is required (suggest adding credentials to `{docs_root}/.auth`)
 
 ---
 
@@ -224,8 +274,8 @@ Use Playwright MCP to:
 1. **Extract module name** from URL (e.g., `/projects` → `projects`)
 2. **Capture full-page screenshot** using Playwright MCP
 3. **Save screenshot to file:**
-   - Create `docs/{module}/images/` directory if it doesn't exist
-   - Save as `docs/{module}/images/{module}.png`
+   - Create `{docs_root}/{module}/images/` directory if it doesn't exist
+   - Save as `{docs_root}/{module}/images/{module}.png`
    - Store the relative path for markdown: `./images/{module}.png`
 4. **Extract page title** from the browser
 5. **Analyze the screenshot visually** - identify:
@@ -327,7 +377,7 @@ Create a markdown file with the following structure:
 - Remove runtime data (counts, specific IDs, timestamps)
 - Describe WHAT users can do, not HOW it's implemented
 - Keep it concise and scannable
-- Save as `docs/{module}/index.md` (e.g., `docs/projects/index.md`)
+- Save as `{docs_root}/{module}/index.md` (e.g., `{docs_root}/projects/index.md`)
 - Include project name from config in header if available
 
 ---
@@ -532,26 +582,26 @@ If user requests a complete flow (e.g., "Create a new campaign"):
    - `/users/settings` → `users-settings`
    - `https://app.com/campaigns` → `campaigns`
 
-2. **Create module directory** `docs/{module}/` if it doesn't exist
+2. **Create module directory** `{docs_root}/{module}/` if it doesn't exist
 
-3. **Create images subdirectory** `docs/{module}/images/` if it doesn't exist
+3. **Create images subdirectory** `{docs_root}/{module}/images/` if it doesn't exist
 
 4. **Save all screenshots**:
-   - Main page: `docs/{module}/images/{module}.png`
-   - Flow steps: `docs/{module}/images/{module}-flow-step-{n}.png`
-   - Form states: `docs/{module}/images/{module}-form-{state}.png`
+   - Main page: `{docs_root}/{module}/images/{module}.png`
+   - Flow steps: `{docs_root}/{module}/images/{module}-flow-step-{n}.png`
+   - Form states: `{docs_root}/{module}/images/{module}-form-{state}.png`
 
-5. **Write markdown file** to `docs/{module}/index.md`
+5. **Write markdown file** to `{docs_root}/{module}/index.md`
 
 6. **Report completion:**
 
 ```
 ✅ Documentation generated successfully!
 
-📄 File: docs/{module}/index.md
-📁 Folder: docs/{module}/
+📄 File: {docs_root}/{module}/index.md
+📁 Folder: {docs_root}/{module}/
 🖼️  Screenshots: {count} images saved
-   - docs/{module}/images/{module}.png
+   - {docs_root}/{module}/images/{module}.png
    {if flow documented}
    - {flow_name} flow ({step_count} steps)
    {/if}

@@ -20,16 +20,66 @@ description: Document a code flow with screenshots, diagrams, and user-friendly 
 
 ---
 
-## LOAD CONFIGURATION
+## STEP 0: FIND AND LOAD CONFIGURATION
 
-**First, check if `docs/config.yml` exists in the project root.**
+**CRITICAL:** Before doing anything else, locate and load the configuration file.
 
-If it exists, load:
+### 0.1 Search for Config File
+
+Search for `aidocs-config.yml` in this order:
+1. `docs/aidocs-config.yml` (default location)
+2. `./aidocs-config.yml` (project root)
+
+**Also check for old config format:**
+If `docs/config.yml` exists but `aidocs-config.yml` doesn't:
+```
+⚠️  Found old config format: docs/config.yml
+
+Please rename it to: docs/aidocs-config.yml
+Then run this command again.
+```
+
+### 0.2 If Config Found
+
+Load the config and extract these values:
+- `docs_root` → Base directory for all documentation (default: `docs`)
 - `urls.base` → Base URL for screenshots (e.g., `https://app.example.com`)
 - `auth.method` → How to authenticate for screenshots
-- `output.directory` → Where to save documentation
 
-Store for later use in screenshot capture step.
+### 0.3 If Config NOT Found
+
+Display message and STOP:
+```
+⚠️  No aidocs-config.yml found.
+
+This workflow requires a configuration file to run.
+
+Would you like to create one now?
+1. Yes - run /docs:init to set up configuration
+2. No - I'll create docs/aidocs-config.yml manually
+```
+
+**If user chooses "Yes":** Execute the `/docs:init` workflow to walk through setup.
+**If user chooses "No":** Stop and provide this minimal config template:
+
+```yaml
+# Minimal aidocs-config.yml
+docs_root: docs
+urls:
+  base: "https://your-app.com"
+auth:
+  required: false
+```
+
+**IMPORTANT:** Do NOT proceed without config. Config is required.
+
+### 0.4 Resolve Paths
+
+Once config is loaded, set these path variables:
+- `{docs_root}` → Use for all output paths (from config, default: `docs`)
+- `{docs_root}/.auth` → Credentials file location
+- `{docs_root}/flows/` → Flow documentation folder
+- `{docs_root}/flows/images/` → Flow screenshots folder
 
 ---
 
@@ -367,10 +417,10 @@ Or run with --no-screenshots flag (not recommended).
 
 **Step 1: Check for credentials file**
 
-Read the `docs/.auth` file if it exists:
+Read the `{docs_root}/.auth` file if it exists:
 
 ```yaml
-# docs/.auth format:
+# {docs_root}/.auth format:
 username: "user@example.com"
 password: "secretpassword"
 login_url: "/login"  # optional, defaults to /login
@@ -378,19 +428,13 @@ login_url: "/login"  # optional, defaults to /login
 
 **Step 2: Check config for auth settings**
 
-Also check `docs/config.yml` for auth configuration:
-
-```yaml
-auth:
-  method: file  # or "env" or "manual"
-  login_url: "/login"
-urls:
-  base: "https://app.example.com"
-```
+The config was already loaded in Step 0. Use:
+- `auth.method` - How to authenticate (file, env, manual)
+- `urls.base` - Base URL for login page
 
 **Step 3: Perform login if credentials found**
 
-If `docs/.auth` exists and contains credentials:
+If `{docs_root}/.auth` exists and contains credentials:
 
 1. Navigate to login URL: `{base_url}/login` (or custom `login_url`)
 2. Wait for login form to load
@@ -402,7 +446,7 @@ If `docs/.auth` exists and contains credentials:
 
 ```
 🔐 Authenticating...
-   Reading credentials from docs/.auth
+   Reading credentials from {docs_root}/.auth
    Navigating to: https://app.example.com/login
    Filling login form...
    ✓ Logged in successfully
@@ -436,7 +480,7 @@ Capture relevant screenshots:
    Looking for: button containing "Import"
    Found: "Import Payments" button
 
-   Saved: docs/flows/images/import-payments-trigger.png
+   Saved: {docs_root}/flows/images/import-payments-trigger.png
 ```
 
 **Screenshot 2: Modal/Form (if applicable)**
@@ -445,7 +489,7 @@ Capture relevant screenshots:
    Clicking: "Import Payments" button
    Waiting for: modal or form
 
-   Saved: docs/flows/images/import-payments-form.png
+   Saved: {docs_root}/flows/images/import-payments-form.png
 ```
 
 ### 6.5 Screenshot Summary
@@ -459,7 +503,7 @@ Capture relevant screenshots:
   2. import-payments-form.png
      └── Import modal with file upload field
 
-Screenshots saved to: docs/flows/images/
+Screenshots saved to: {docs_root}/flows/images/
 ```
 
 ---
@@ -509,7 +553,7 @@ Create the markdown file with all gathered information.
 
 ### 8.1 Create Output Directory
 
-Ensure `docs/flows/` and `docs/flows/images/` directories exist.
+Ensure `{docs_root}/flows/` and `{docs_root}/flows/images/` directories exist.
 
 ### 8.2 Generate Filename
 
@@ -693,7 +737,7 @@ public function handle(CsvPaymentImporter $importer)
 
 ### 8.4 Save File
 
-Write to `docs/flows/{kebab-case-title}.md`
+Write to `{docs_root}/flows/{kebab-case-title}.md`
 
 ---
 
@@ -704,7 +748,7 @@ Display final summary:
 ```
 ✅ Flow Documentation Complete
 
-📄 Output: docs/flows/import-payments-from-csv.md
+📄 Output: {docs_root}/flows/import-payments-from-csv.md
 
 📊 Analysis Summary:
    Files analyzed: 6
