@@ -2,6 +2,10 @@
 
 AI-powered documentation generator for web applications.
 
+[![Watch the video](https://img.youtube.com/vi/cmwt4XizcTw/maxresdefault.jpg)](https://youtu.be/cmwt4XizcTw)
+
+▶️ **[Watch the demo on YouTube](https://youtu.be/cmwt4XizcTw)**
+
 ## How It Works
 
 aidocs generates comprehensive documentation by combining **three sources of truth**:
