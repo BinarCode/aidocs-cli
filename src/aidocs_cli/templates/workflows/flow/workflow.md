@@ -363,11 +363,56 @@ Or run with --no-screenshots flag (not recommended).
 
 ### 6.2 Authenticate (if needed)
 
-Load credentials from `docs/config.yml` or `docs/.auth`:
+**IMPORTANT:** Before capturing screenshots, check if authentication is required.
+
+**Step 1: Check for credentials file**
+
+Read the `docs/.auth` file if it exists:
+
+```yaml
+# docs/.auth format:
+username: "user@example.com"
+password: "secretpassword"
+login_url: "/login"  # optional, defaults to /login
+```
+
+**Step 2: Check config for auth settings**
+
+Also check `docs/config.yml` for auth configuration:
+
+```yaml
+auth:
+  method: file  # or "env" or "manual"
+  login_url: "/login"
+urls:
+  base: "https://app.example.com"
+```
+
+**Step 3: Perform login if credentials found**
+
+If `docs/.auth` exists and contains credentials:
+
+1. Navigate to login URL: `{base_url}/login` (or custom `login_url`)
+2. Wait for login form to load
+3. Fill username field (look for: input[type="email"], input[name="email"], #email)
+4. Fill password field (look for: input[type="password"], input[name="password"], #password)
+5. Click submit button (look for: button[type="submit"], input[type="submit"], button containing "Login"/"Sign in")
+6. Wait for redirect/navigation to complete
+7. Verify login succeeded (check for dashboard, user menu, or absence of login form)
 
 ```
 🔐 Authenticating...
-   Using credentials from docs/.auth
+   Reading credentials from docs/.auth
+   Navigating to: https://app.example.com/login
+   Filling login form...
+   ✓ Logged in successfully
+```
+
+**If login fails:**
+```
+⚠️ Authentication failed
+   Could not log in with provided credentials.
+   Continuing without screenshots.
 ```
 
 ### 6.3 Navigate to UI Page
