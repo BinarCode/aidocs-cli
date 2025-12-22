@@ -360,7 +360,7 @@ Result:
 
 Create markdown file in output directory:
 
-### File: `docs/flows/campaign-lifecycle.md`
+### File: `docs/campaigns/lifecycle.md`
 
 ```markdown
 # Campaign Lifecycle
@@ -520,7 +520,7 @@ Save flow to `docs/.knowledge/modules/{entity}/flows/`:
     "budget": 5000
   },
   "errors_documented": ["validation", "permission", "not_found"],
-  "output_file": "docs/flows/campaign-lifecycle.md"
+  "output_file": "docs/campaigns/lifecycle.md"
 }
 ```
 
@@ -532,7 +532,7 @@ Save flow to `docs/.knowledge/modules/{entity}/flows/`:
 ✅ Flow Documentation Complete
 
 📋 Flow: Campaign Lifecycle
-📄 Output: docs/flows/campaign-lifecycle.md
+📄 Output: docs/campaigns/lifecycle.md
 
 📊 Coverage:
    Steps documented: 9
@@ -541,15 +541,15 @@ Save flow to `docs/.knowledge/modules/{entity}/flows/`:
    Related pages: 5
 
 📁 Files created:
-   • docs/flows/campaign-lifecycle.md
-   • docs/images/campaign-flow-step-*.png (12 images)
+   • docs/campaigns/lifecycle.md
+   • docs/campaigns/images/campaign-flow-step-*.png (12 images)
 
 📁 Knowledge updated:
    • docs/.knowledge/modules/campaigns/flows/lifecycle.json
 
 💡 Suggestions:
    • Run /docs:flow campaign-approval for the approval flow
-   • Add this to your index: [Campaign Lifecycle](./flows/campaign-lifecycle.md)
+   • Add this to your index: [Campaign Lifecycle](./campaigns/lifecycle.md)
 ```
 
 ---

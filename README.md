@@ -354,14 +354,13 @@ docs/
 ├── users/
 │   ├── index.md               # Module overview
 │   ├── lifecycle.md           # CRUD documentation
+│   ├── user-registration-to-campaign.md  # Cross-module flow (first module)
 │   └── images/
-├── campaigns/
-│   ├── index.md
-│   ├── lifecycle.md
-│   ├── duplicate-campaign.md  # Custom flow
-│   └── images/
-└── flows/
-    └── user-registration-to-campaign.md
+└── campaigns/
+    ├── index.md
+    ├── lifecycle.md
+    ├── duplicate-campaign.md  # Custom flow
+    └── images/
 ```
 
 **Resume support:** If execution stops, run `/docs:execute --continue` to resume

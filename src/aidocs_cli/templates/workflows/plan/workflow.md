@@ -304,20 +304,19 @@ cross_module_flows:
   - name: "user-registration-to-first-campaign"
     title: "User Registration to First Campaign"
     modules: [users, campaigns]
-    output: "docs/flows/user-registration-to-first-campaign.md"
+    output: "docs/users/user-registration-to-first-campaign.md"
     status: pending
 
   - name: "order-checkout-payment"
     title: "Order Checkout to Payment"
     modules: [orders, payments, products]
-    output: "docs/flows/order-checkout-payment.md"
+    output: "docs/orders/order-checkout-payment.md"
     status: pending
 
 output_structure:
   root: "docs/"
   index: "docs/index.md"
   module_pattern: "docs/{module}/"
-  flows_directory: "docs/flows/"
   images_pattern: "docs/{module}/images/"
 ```
 
@@ -348,8 +347,7 @@ output_structure:
    ├── users/
    ├── campaigns/
    ├── orders/
-   ├── payments/
-   └── flows/
+   └── payments/
 
 💡 Next step: Run /docs:execute to generate documentation
 ```

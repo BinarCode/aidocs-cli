@@ -132,13 +132,14 @@ docs/
 │   ├── index.md                          # Module overview
 │   ├── lifecycle.md                      # CRUD documentation
 │   └── images/                           # 8-12 screenshots
-├── payments/
-│   ├── index.md                          # Module overview
-│   ├── lifecycle.md                      # CRUD documentation
-│   └── images/                           # 6-10 screenshots
-└── flows/
-    ├── user-registration-to-first-campaign.md
-    └── order-checkout-payment.md
+└── payments/
+    ├── index.md                          # Module overview
+    ├── lifecycle.md                      # CRUD documentation
+    └── images/                           # 6-10 screenshots
+
+Note: Cross-module flows are placed in the first module's folder:
+  • users/user-registration-to-first-campaign.md
+  • orders/order-checkout-payment.md
 
 Estimated:
   • 12 markdown files
@@ -299,7 +300,7 @@ After all modules complete, document cross-module flows:
   📸 Step 6: Campaign created
 
   ✓ Flow documented (6 steps, 6 screenshots)
-  Written: docs/flows/user-registration-to-first-campaign.md
+  Written: docs/users/user-registration-to-first-campaign.md
 
 [2/2] Order Checkout to Payment
   Modules: orders → payments
@@ -313,7 +314,7 @@ After all modules complete, document cross-module flows:
   📸 Step 6: Order complete
 
   ✓ Flow documented (6 steps, 6 screenshots)
-  Written: docs/flows/order-checkout-payment.md
+  Written: docs/orders/order-checkout-payment.md
 ```
 
 ---
@@ -340,8 +341,8 @@ docs/index.md:
 
 ## User Flows
 
-- [User Registration to First Campaign](./flows/user-registration-to-first-campaign.md)
-- [Order Checkout to Payment](./flows/order-checkout-payment.md)
+- [User Registration to First Campaign](./users/user-registration-to-first-campaign.md)
+- [Order Checkout to Payment](./orders/order-checkout-payment.md)
 
 ---
 
@@ -408,11 +409,10 @@ cross_module_flows:
 📁 Output:
    docs/
    ├── index.md
-   ├── users/           (3 files, 11 images)
+   ├── users/           (4 files, 14 images)
    ├── campaigns/       (5 files, 18 images)
-   ├── orders/          (3 files, 12 images)
-   ├── payments/        (3 files, 8 images)
-   └── flows/           (2 files, 3 images)
+   ├── orders/          (4 files, 15 images)
+   └── payments/        (3 files, 8 images)
 
 📄 Files created: 16 markdown files
 📸 Screenshots: 52 images

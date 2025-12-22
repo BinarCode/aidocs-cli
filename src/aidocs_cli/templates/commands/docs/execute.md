@@ -48,14 +48,13 @@ docs/
 ├── users/
 │   ├── index.md               # Module overview
 │   ├── lifecycle.md           # CRUD documentation
+│   ├── registration-to-campaign.md  # Cross-module flow (first module)
 │   └── images/
-├── campaigns/
-│   ├── index.md
-│   ├── lifecycle.md
-│   ├── duplicate-campaign.md  # Custom flow
-│   └── images/
-└── flows/
-    └── registration-to-campaign.md  # Cross-module flow
+└── campaigns/
+    ├── index.md
+    ├── lifecycle.md
+    ├── duplicate-campaign.md  # Custom flow
+    └── images/
 ```
 
 **Resume support:**
