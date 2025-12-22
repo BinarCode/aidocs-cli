@@ -284,7 +284,7 @@ After running `aidocs init`, these commands are available in Claude Code:
 | `/docs:execute` | Execute plan, generate all docs | Yes |
 | `/docs:explore <module>` | Interactive UI exploration with Playwright | Yes |
 | `/docs:flow "<description>"` | Document a code flow from human description | Optional |
-| `/docs:sync` | Generate embeddings and SQL for vector DB import | No |
+| `/docs:rag-vectors` | Generate embeddings and SQL for vector DB import | No |
 | `/docs:vector-init` | Generate database migration for vector embeddings | No |
 | `/docs:rag` | Setup RAG: chunks → migration → embeddings (all-in-one) | No |
 
@@ -559,14 +559,14 @@ public function import(ImportPaymentsRequest $request)
 
 **No Playwright?** The command still works - generates code analysis, mermaid diagrams, and snippets without screenshots.
 
-### `/docs:sync`
+### `/docs:rag-vectors`
 
 Generate embeddings and SQL for syncing documentation to a PostgreSQL vector database.
 
 ```bash
-/docs:sync                    # Generate sync SQL (smart)
-/docs:sync --dry              # Preview what would be synced
-/docs:sync --force            # Re-sync all files
+/docs:rag-vectors                    # Generate sync SQL (smart)
+/docs:rag-vectors --dry              # Preview what would be synced
+/docs:rag-vectors --force            # Re-sync all files
 ```
 
 **Prerequisites:**

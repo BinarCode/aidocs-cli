@@ -1,9 +1,9 @@
 ---
-name: docs:sync
+name: docs:rag-vectors
 description: Generate embeddings and SQL for syncing docs to vector DB
 ---
 
-# Sync Documentation to Vector DB
+# Generate Documentation Embeddings
 
 Generate embeddings and SQL script for importing documentation chunks to PostgreSQL.
 
