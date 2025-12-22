@@ -1,15 +1,22 @@
 ---
 name: docs-flow
-description: Document a code flow by analyzing the codebase from a human description. Generates mermaid diagrams, code snippets, and optional UI screenshots.
+description: Document a code flow with screenshots, diagrams, and user-friendly explanations.
 ---
 
 # Code Flow Documentation Workflow
 
-**Goal:** Analyze the codebase to document how a specific feature or process works, based on a natural language description.
+**Goal:** Create user-friendly documentation that explains how a feature works, with screenshots and clear step-by-step instructions.
 
-**Your Role:** You are a code analyst and documentation specialist. You will search the codebase, trace execution paths, and produce clear documentation with diagrams, code snippets, and UI screenshots when available.
+**Your Role:** You are a documentation specialist creating guides for END USERS, not developers. Focus on:
+- **Screenshots first** - Visual documentation is most important
+- **Plain English** - Avoid technical jargon
+- **Step-by-step instructions** - What the user clicks/sees
+- **Minimal code** - Only show code if absolutely necessary
 
-**Optional:** If Playwright MCP is available and a base URL is configured, screenshots of relevant UI pages will be captured.
+**IMPORTANT - Screenshots are REQUIRED:**
+- You MUST use Playwright MCP to capture screenshots
+- If Playwright is not available, STOP and tell the user to install it
+- Screenshots should show: the page, buttons to click, forms to fill
 
 ---
 
@@ -327,28 +334,27 @@ sequenceDiagram
 
 ---
 
-## STEP 6: CAPTURE UI SCREENSHOTS (Optional)
+## STEP 6: CAPTURE UI SCREENSHOTS (REQUIRED)
 
-**Skip this step if:**
-- `--no-screenshots` flag was provided
-- No `urls.base` configured in `docs/config.yml`
-- Playwright MCP is not available
-- No UI route was detected
+**Screenshots are the MOST IMPORTANT part of the documentation.**
+
+You MUST capture screenshots using Playwright MCP. Do NOT skip this step.
 
 ### 6.1 Check Playwright MCP
 
-```
-📸 Screenshot capture...
+First, verify Playwright MCP is available by attempting to use it.
 
-Checking Playwright MCP availability...
+If Playwright MCP is NOT available:
+```
+❌ STOP: Playwright MCP is required for documentation.
+
+Please install Playwright MCP to continue:
+  https://github.com/anthropics/mcp-playwright
+
+Or run with --no-screenshots flag (not recommended).
 ```
 
-If NOT available:
-```
-ℹ️  Playwright MCP not available - skipping screenshots.
-   To enable screenshots, install Playwright MCP:
-   https://github.com/anthropics/mcp-playwright
-```
+**DO NOT CONTINUE without screenshots unless --no-screenshots was explicitly provided.**
 
 ### 6.2 Authenticate (if needed)
 
@@ -462,93 +468,72 @@ Convert description to kebab-case:
 
 ### 8.3 Write Markdown File
 
-Use this template:
+Use this USER-FOCUSED template (avoid technical jargon):
 
 ```markdown
-# {Title from Description}
+# {Title - Action-oriented, e.g., "How to Import Payments"}
 
-## Overview
+{One sentence explaining what users can do with this feature}
 
-{Brief description of what this flow does, based on code analysis}
+## Before You Start
 
-## UI Location
+{List any prerequisites in plain English}
+- What the user needs to have ready
+- Any permissions required
+- File format requirements (if applicable)
 
-{If UI screenshots were captured}
+## Steps
 
-The flow is initiated from the **{Page Name}** page.
+### Step 1: {Action verb - e.g., "Go to Payroll"}
 
-![{Page Name}](./images/{screenshot-trigger}.png)
+{Simple instruction in plain English}
 
-Click the **"{Button Name}"** button to start the flow.
+![{Descriptive alt text}](./images/{screenshot-1}.png)
 
-{If there's a form/modal}
+### Step 2: {Action verb - e.g., "Click Import"}
 
-![{Form/Modal Name}](./images/{screenshot-form}.png)
+{Simple instruction}
 
-## Flow Diagram
+![{Descriptive alt text}](./images/{screenshot-2}.png)
 
-```mermaid
-{Generated sequence diagram}
-```
+### Step 3: {Action verb - e.g., "Upload Your File"}
 
-## Entry Points
+{Simple instruction}
 
-{List of ways this flow can be triggered}
+![{Descriptive alt text}](./images/{screenshot-3}.png)
 
-| Trigger | Location | Command/Route |
-|---------|----------|---------------|
-| UI Button | /payroll | "Import Payments" button |
-| API | POST /payroll/import | With CSV file |
-| CLI | Artisan | `php artisan payments:import {file}` |
+### Step 4: {Action verb - e.g., "Review and Confirm"}
 
-## Step-by-Step
+{Simple instruction}
 
-### 1. {First Step Title}
+![{Descriptive alt text}](./images/{screenshot-4}.png)
 
-Location: `{file_path}:{line_number}`
+## What Happens Next
 
-{Description of what this step does}
+{Explain what the user should expect after completing the steps}
+- How long it takes
+- Where to see results
+- Any notifications they'll receive
 
-```{language}
-{code snippet}
-```
+## Troubleshooting
 
-### 2. {Second Step Title}
+{Common issues and solutions in plain English}
 
-{Continue for each major step...}
-
-## Validation Rules
-
-{If request validation was found}
-
-| Field | Rules |
-|-------|-------|
-| csv | required, file, mimes:csv,txt |
-| ... | ... |
-
-## Related Files
-
-| File | Purpose |
-|------|---------|
-| {path} | {description} |
-
-## Configuration
-
-{If any config files are relevant}
-
-- `config/queue.php` - Queue connection for imports
-- `.env` - QUEUE_CONNECTION
-
-## Triggers
-
-- **UI**: Click "Import Payments" on /payroll page
-- **API**: `POST /payroll/import` with multipart form
-- **CLI**: `php artisan payments:import {file}`
+| Problem | Solution |
+|---------|----------|
+| "{Error message user might see}" | {How to fix it} |
 
 ---
 
-*Documentation generated by /docs:flow*
+*Documentation generated by [aidocs](https://github.com/binarcode/aidocs-cli)*
 ```
+
+**IMPORTANT OUTPUT RULES:**
+- NO file paths or line numbers
+- NO code snippets (unless it's a developer tool)
+- NO technical diagrams (unless specifically requested)
+- Use action verbs: "Click", "Go to", "Enter", "Select"
+- Write for someone who has never seen the app before
 
 ### 8.4 Save File
 
