@@ -42,6 +42,19 @@ def generate_toc_html(headings: list[dict]) -> str:
     return html
 
 
+def apply_inline_formatting(text: str) -> str:
+    """Apply inline markdown formatting (bold, italic, code, links)."""
+    # Bold
+    text = re.sub(r"\*\*([^*]+)\*\*", r"<strong>\1</strong>", text)
+    # Italic
+    text = re.sub(r"\*([^*]+)\*", r"<em>\1</em>", text)
+    # Inline code
+    text = re.sub(r"`([^`]+)`", r"<code>\1</code>", text)
+    # Links
+    text = re.sub(r"\[([^\]]+)\]\(([^)]+)\)", r'<a href="\2">\1</a>', text)
+    return text
+
+
 def markdown_to_html(markdown_content: str) -> str:
     """Convert markdown to HTML with proper heading IDs."""
     lines = markdown_content.split("\n")
@@ -93,7 +106,8 @@ def markdown_to_html(markdown_content: str) -> str:
                     tag = "th" if i == 0 else "td"
                     html_lines.append("<tr>")
                     for cell in row:
-                        html_lines.append(f"<{tag}>{cell}</{tag}>")
+                        formatted_cell = apply_inline_formatting(cell)
+                        html_lines.append(f"<{tag}>{formatted_cell}</{tag}>")
                     html_lines.append("</tr>")
                 html_lines.append('</table>')
             in_table = False
@@ -117,9 +131,9 @@ def markdown_to_html(markdown_content: str) -> str:
             text = line[5:].strip()
             html_lines.append(f'<h4>{text}</h4>')
         elif line.startswith("- "):
-            html_lines.append(f'<li>{line[2:]}</li>')
+            html_lines.append(f'<li>{apply_inline_formatting(line[2:])}</li>')
         elif line.startswith("* "):
-            html_lines.append(f'<li>{line[2:]}</li>')
+            html_lines.append(f'<li>{apply_inline_formatting(line[2:])}</li>')
         elif line.strip().startswith("!["):
             # Image: ![alt](src)
             match = re.match(r"!\[([^\]]*)\]\(([^)]+)\)", line.strip())
@@ -128,16 +142,7 @@ def markdown_to_html(markdown_content: str) -> str:
                 html_lines.append(f'<img src="{src}" alt="{alt}">')
         elif line.strip():
             # Regular paragraph - handle inline formatting
-            text = line
-            # Bold
-            text = re.sub(r"\*\*([^*]+)\*\*", r"<strong>\1</strong>", text)
-            # Italic
-            text = re.sub(r"\*([^*]+)\*", r"<em>\1</em>", text)
-            # Inline code
-            text = re.sub(r"`([^`]+)`", r"<code>\1</code>", text)
-            # Links
-            text = re.sub(r"\[([^\]]+)\]\(([^)]+)\)", r'<a href="\2">\1</a>', text)
-            html_lines.append(f'<p>{text}</p>')
+            html_lines.append(f'<p>{apply_inline_formatting(line)}</p>')
         else:
             html_lines.append("")
 
@@ -148,7 +153,8 @@ def markdown_to_html(markdown_content: str) -> str:
             tag = "th" if i == 0 else "td"
             html_lines.append("<tr>")
             for cell in row:
-                html_lines.append(f"<{tag}>{cell}</{tag}>")
+                formatted_cell = apply_inline_formatting(cell)
+                html_lines.append(f"<{tag}>{formatted_cell}</{tag}>")
             html_lines.append("</tr>")
         html_lines.append('</table>')
 
