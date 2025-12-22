@@ -223,7 +223,7 @@ Selected: 2 cross-module flows
 
 ## STEP 4: GENERATE PLAN FILE
 
-Create `docs-plan.yaml`:
+Create `docs/plan.yml`:
 
 ```yaml
 # Documentation Plan
@@ -327,7 +327,7 @@ output_structure:
 ```
 ✅ Documentation Plan Created
 
-📄 Plan saved to: docs-plan.yaml
+📄 Plan saved to: docs/plan.yml
 
 📊 Summary:
    Modules to document: 4
@@ -395,7 +395,7 @@ Resume with: /docs:execute --continue
 ```
 ✅ Plan created successfully
 
-📄 docs-plan.yaml ready
+📄 docs/plan.yml ready
 📊 4 modules, 2 cross-module flows
 💡 Run /docs:execute to start generating documentation
 ```

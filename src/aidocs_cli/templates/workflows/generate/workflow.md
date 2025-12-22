@@ -13,7 +13,7 @@ description: Generate documentation for a web page using Playwright MCP for brow
 
 ## LOAD CONFIGURATION
 
-**First, check if `docs-config.yaml` exists in the project root.**
+**First, check if `docs/config.yml` exists in the project root.**
 
 If it exists, load it and use these values as defaults:
 - `project.name` → Use in documentation headers

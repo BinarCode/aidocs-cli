@@ -196,7 +196,7 @@ Type your notes or press Enter to skip.
 
 Based on analysis and answers, create a comprehensive project context file:
 
-Create file: `docs-config.yaml`
+Create file: `docs/config.yml`
 
 ```yaml
 # Documentation Configuration
@@ -465,7 +465,7 @@ Generate documentation using Claude Code:
 ✅ Documentation initialized successfully!
 
 📄 Created files:
-   - docs-config.yaml    (main configuration)
+   - docs/config.yml    (main configuration)
    - .docsignore         (pages to skip)
    - {output_dir}/index.md  (documentation homepage)
    - {output_dir}/images/   (screenshots folder)
@@ -482,7 +482,7 @@ Generate documentation using Claude Code:
 
 🚀 Next steps:
 
-1. Review docs-config.yaml and adjust if needed
+1. Review docs/config.yml and adjust if needed
 
 2. Discover all modules in your codebase:
    /docs:discover
@@ -503,7 +503,7 @@ Happy documenting! 📚
 
 ## CONFIGURATION USAGE
 
-Other commands (`/docs:generate`, `/docs:analyze`, `/docs:batch`) will automatically read `docs-config.yaml` if it exists:
+Other commands (`/docs:generate`, `/docs:analyze`, `/docs:batch`) will automatically read `docs/config.yml` if it exists:
 
 - Use `project.name` in headers
 - Apply `style.tone` to writing

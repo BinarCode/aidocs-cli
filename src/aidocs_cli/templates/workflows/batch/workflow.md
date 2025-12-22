@@ -77,7 +77,7 @@ Proceed with all? [Y/n] Or type numbers to select specific pages.
 
 **Load credentials using same logic as /docs:generate:**
 
-Check `auth.method` in `docs-config.yaml`:
+Check `auth.method` in `docs/config.yml`:
 1. **method: "file"** → Read from `.docs-auth`
 2. **method: "env"** → Read from environment variables
 3. **method: "manual"** → Require `--auth` flag

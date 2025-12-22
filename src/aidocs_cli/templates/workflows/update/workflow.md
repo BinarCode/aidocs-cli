@@ -13,7 +13,7 @@ description: Update existing documentation based on git diff between current bra
 
 ## LOAD CONFIGURATION
 
-Check if `docs-config.yaml` exists and load settings:
+Check if `docs/config.yml` exists and load settings:
 - `output.directory` → Where docs are stored
 - `style.tone` → Writing style to maintain
 - `stack` → Tech stack info for understanding changes

@@ -86,7 +86,7 @@ aidocs init .
 │           │                                                                  │
 │           ▼                                                                  │
 │  /docs:plan                         Create ordered documentation plan        │
-│           │                         → Outputs docs-plan.yaml                 │
+│           │                         → Outputs docs/plan.yml                 │
 │           ▼                                                                  │
 │  /docs:execute                      Run through plan, generate all docs      │
 │                                     → Resume with --continue if interrupted  │
@@ -336,9 +336,9 @@ Create an ordered documentation plan based on discovered modules:
 1. Reads discovered modules from `docs/.knowledge/`
 2. Analyzes dependencies and relationships
 3. Suggests documentation order (core modules first)
-4. Creates `docs-plan.yaml` with the plan
+4. Creates `docs/plan.yml` with the plan
 
-**Output: `docs-plan.yaml`**
+**Output: `docs/plan.yml`**
 ```yaml
 modules:
   - name: users
@@ -377,7 +377,7 @@ Execute the documentation plan and generate all docs:
 ```
 
 **What it does:**
-1. Reads `docs-plan.yaml`
+1. Reads `docs/plan.yml`
 2. For each module in order:
    - Runs explore (if needed)
    - Generates lifecycle documentation
@@ -532,7 +532,7 @@ This knowledge powers smarter documentation generation.
 
 # Option B: Document entire project
 /docs:discover                             # Find all modules
-/docs:plan                                 # Create plan (docs-plan.yaml)
+/docs:plan                                 # Create plan (docs/plan.yml)
 /docs:execute                              # Generate all documentation
 
 # Resume if interrupted
@@ -555,7 +555,7 @@ This knowledge powers smarter documentation generation.
 
 ## Configuration
 
-After running `/docs:init`, a `docs-config.yaml` is created:
+After running `/docs:init`, a `docs/config.yml` is created:
 
 ```yaml
 project:

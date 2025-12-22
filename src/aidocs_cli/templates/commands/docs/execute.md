@@ -5,7 +5,7 @@ description: Execute the documentation plan and generate all docs
 
 # Execute Documentation Plan
 
-Run through `docs-plan.yaml` and generate documentation for each module.
+Run through `docs/plan.yml` and generate documentation for each module.
 
 **Usage:**
 ```
@@ -16,7 +16,7 @@ Run through `docs-plan.yaml` and generate documentation for each module.
 ```
 
 **What it does:**
-1. Reads `docs-plan.yaml`
+1. Reads `docs/plan.yml`
 2. For each module in order:
    - Runs explore (if needed)
    - Generates lifecycle documentation

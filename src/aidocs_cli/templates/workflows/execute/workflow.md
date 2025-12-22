@@ -10,7 +10,7 @@ description: Execute the documentation plan and generate all docs with screensho
 **Your Role:** You are a documentation generator. You will systematically work through the plan, running explore and flow documentation for each module.
 
 **Requires:**
-- `docs-plan.yaml` from `/docs:plan`
+- `docs/plan.yml` from `/docs:plan`
 - Playwright MCP for browser automation
 
 ---
@@ -39,7 +39,7 @@ Examples:
 ```
 📋 Loading documentation plan...
 
-✓ Plan found: docs-plan.yaml
+✓ Plan found: docs/plan.yml
   Created: 2024-01-15 10:30:00
   Modules: 4
   Cross-module flows: 2
@@ -358,7 +358,7 @@ docs/index.md:
 Mark plan as complete:
 
 ```yaml
-# docs-plan.yaml (updated)
+# docs/plan.yml (updated)
 
 status: complete
 completed_at: 2024-01-15T11:45:00Z
