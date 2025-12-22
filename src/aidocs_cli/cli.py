@@ -14,6 +14,7 @@ from . import __version__
 from .chunker import chunk_directory
 from .embeddings import generate_sync_sql, get_openai_api_key
 from .installer import check_tools, install_docs_module
+from .pdf_exporter import export_markdown_to_pdf
 
 console = Console()
 
@@ -427,6 +428,65 @@ def rag_vectors(
                 title="Success",
                 border_style="green",
             ))
+
+    except typer.Exit:
+        raise
+    except Exception as e:
+        console.print(f"[red]Error: {e}[/red]")
+        raise typer.Exit(1)
+
+
+@app.command("export-pdf")
+def export_pdf(
+    markdown_file: str = typer.Argument(
+        ...,
+        help="Path to the markdown file to export.",
+    ),
+    output: Optional[str] = typer.Option(
+        None,
+        "--output",
+        "-o",
+        help="Output PDF path (default: docs/exports/{name}.pdf).",
+    ),
+) -> None:
+    """Export markdown documentation to PDF.
+
+    Converts a markdown file to a styled PDF with auto-generated
+    table of contents. Uses Chrome/Chromium for rendering.
+
+    Examples:
+        aidocs export-pdf docs/projects/index.md
+        aidocs export-pdf docs/flows/sync-users.md -o manual.pdf
+    """
+    md_path = Path(markdown_file)
+    out_path = Path(output) if output else None
+
+    console.print(f"[blue]Exporting {markdown_file} to PDF...[/blue]")
+    console.print()
+
+    def on_status(msg: str) -> None:
+        console.print(f"  [dim]{msg}[/dim]")
+
+    try:
+        result = export_markdown_to_pdf(md_path, out_path, on_status=on_status)
+
+        if not result["success"]:
+            console.print(f"[red]Error: {result.get('error', 'Unknown error')}[/red]")
+            raise typer.Exit(1)
+
+        stats = result["stats"]
+        console.print()
+        console.print(Panel.fit(
+            f"[green]PDF exported successfully![/green]\n\n"
+            f"[bold]Title:[/bold] {stats['title']}\n"
+            f"[bold]TOC entries:[/bold] {stats['toc_entries']}\n"
+            f"[bold]Size:[/bold] {stats['size_kb']} KB\n\n"
+            f"[bold]Output:[/bold] {result['output_path']}\n\n"
+            f"[dim]Open with:[/dim]\n"
+            f"  [cyan]open {result['output_path']}[/cyan]",
+            title="Success",
+            border_style="green",
+        ))
 
     except typer.Exit:
         raise

@@ -258,6 +258,43 @@ docs/
 
 **Next step:** Run `aidocs rag-vectors` to generate embeddings
 
+### `aidocs export-pdf`
+
+Export markdown documentation to PDF with auto-generated table of contents.
+
+```bash
+aidocs export-pdf docs/projects/index.md                    # Export to docs/exports/
+aidocs export-pdf docs/flows/sync-users.md -o manual.pdf    # Custom output path
+```
+
+**Options:**
+| Option | Description |
+|--------|-------------|
+| `--output, -o` | Output PDF path (default: `docs/exports/{name}.pdf`) |
+
+**What it does:**
+1. Reads the markdown file
+2. Extracts H1/H2 headings for table of contents
+3. Converts markdown to styled HTML
+4. Uses Chrome/Chromium headless to render PDF
+5. Saves with proper page breaks and formatting
+
+**Output:**
+```
+╭──────────── Success ────────────╮
+│ PDF exported successfully!      │
+│                                 │
+│ Title: Projects Overview        │
+│ TOC entries: 8                  │
+│ Size: 245.3 KB                  │
+│                                 │
+│ Output: docs/exports/index.pdf  │
+╰─────────────────────────────────╯
+```
+
+**Requirements:**
+- Chrome or Chromium installed (uses headless mode)
+
 ### `aidocs rag-vectors`
 
 Generate embeddings and SQL for vector database import.
