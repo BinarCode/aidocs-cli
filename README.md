@@ -66,14 +66,16 @@ aidocs init .
                                       │
                                       ▼
 ┌──────────────────────────────────────────────────────────────────────────────┐
-│                    OPTION A: Document Single Module                          │
+│                    OPTION A: Document a Code Flow                            │
 ├──────────────────────────────────────────────────────────────────────────────┤
 │                                                                              │
-│  /docs:flow campaign                ← Just run this one command!             │
+│  /docs:flow "sync users from discord"    ← Describe the flow in words!       │
 │           │                                                                  │
-│           ├──→ Auto-runs /docs:discover campaign (analyzes code)             │
-│           ├──→ Auto-runs /docs:explore campaign (tests UI)                   │
-│           └──→ Generates full lifecycle docs with screenshots                │
+│           ├──→ Searches codebase for relevant files                          │
+│           ├──→ Traces execution path and builds call graph                   │
+│           ├──→ Generates mermaid sequence diagram                            │
+│           ├──→ Captures UI screenshots (if Playwright + route detected)      │
+│           └──→ Creates docs/flows/sync-users-from-discord.md                 │
 │                                                                              │
 └──────────────────────────────────────────────────────────────────────────────┘
                                       │
@@ -110,8 +112,9 @@ aidocs init .
 # Simple: Generate docs for one page
 /docs:generate https://myapp.com/dashboard
 
-# Smart: Full module documentation (auto-discovers and explores)
-/docs:flow campaign
+# Flow: Document a code flow from description
+/docs:flow "sync users from discord"
+/docs:flow "import payments from csv"
 
 # Batch: Document entire project
 /docs:discover && /docs:plan && /docs:execute
@@ -221,7 +224,7 @@ After running `aidocs init`, these commands are available in Claude Code:
 | `/docs:plan` | Create ordered documentation plan | No |
 | `/docs:execute` | Execute plan, generate all docs | Yes |
 | `/docs:explore <module>` | Interactive UI exploration with Playwright | Yes |
-| `/docs:flow <entity>` | Document complete entity lifecycle (CRUD) | Yes |
+| `/docs:flow "<description>"` | Document a code flow from human description | Optional |
 | `/docs:sync` | Generate embeddings and SQL for vector DB import | No |
 
 ### `/docs:init`
@@ -420,30 +423,80 @@ Interactively explore a module's UI with Playwright:
 - UI state changes (what happens when you click)
 - Cross-page effects (create here → appears there)
 
-### `/docs:flow <entity>`
+### `/docs:flow "<description>"`
 
-Document a complete entity lifecycle. **Auto-runs discover and explore if needed.**
+Document a code flow by analyzing your codebase from a natural language description. Generates mermaid diagrams, code snippets, and optional UI screenshots.
 
 ```bash
-/docs:flow campaign                        # Full CRUD lifecycle (default)
-/docs:flow campaign --only create          # Only document create flow
-/docs:flow campaign --only edit            # Only document edit flow
-/docs:flow "user registration"             # Custom flow description
-/docs:flow order --include-errors          # Include error states
-/docs:flow campaign --skip-explore         # Skip UI exploration (faster)
+/docs:flow "sync users from discord"              # Backend integration flow
+/docs:flow "import payments from csv"             # Import flow with UI
+/docs:flow "how payments are processed"           # Processing flow
+/docs:flow "webhook handling for stripe"          # Webhook flow
+/docs:flow "user registration" --no-screenshots   # Skip UI screenshots
 ```
 
-**What happens:**
-1. Auto-runs `/docs:discover` if module not analyzed yet
-2. Auto-runs `/docs:explore` if UI not explored yet
-3. Documents full lifecycle (create → view → edit → delete) by default
+**What it does:**
+1. Parses your description to extract keywords (entities, actions)
+2. Searches the codebase for relevant files (jobs, services, controllers)
+3. Identifies entry points (commands, jobs, webhooks, routes, UI buttons)
+4. Traces the execution flow and builds a call graph
+5. Generates a mermaid sequence diagram
+6. Captures UI screenshots (if Playwright available and route detected)
+7. Extracts code snippets with file:line references
+8. Creates comprehensive markdown documentation
 
-**Produces step-by-step guides with:**
-- Screenshots at each step
-- Data flow tracking
-- Validation documentation
-- Error state handling
-- Related pages
+**Output:** `docs/flows/{kebab-case-title}.md`
+
+**Example output for `/docs:flow "import payments from csv"`:**
+
+```markdown
+# Import Payments from CSV
+
+## Overview
+Import payment records from a CSV file into the system.
+
+## UI Location
+![Payroll Page](./images/import-payments-trigger.png)
+Click the **"Import Payments"** button on the Payroll page.
+
+## Flow Diagram
+```mermaid
+sequenceDiagram
+    participant User
+    participant Controller as PayrollController
+    participant Job as ImportPaymentsJob
+    participant DB as Database
+
+    User->>Controller: POST /payroll/import
+    Controller->>Job: dispatch()
+    Job->>DB: Payment::create()
+```
+
+## Entry Points
+| Trigger | Location | Command/Route |
+|---------|----------|---------------|
+| UI Button | /payroll | "Import Payments" button |
+| API | POST /payroll/import | With CSV file |
+| CLI | Artisan | `php artisan payments:import` |
+
+## Step-by-Step
+### 1. Upload CSV File
+Location: `app/Http/Controllers/PayrollController.php:45`
+```php
+public function import(ImportPaymentsRequest $request)
+{
+    ImportPaymentsJob::dispatch($request->file('csv'));
+}
+```
+...
+```
+
+**Screenshots are captured automatically when:**
+- Playwright MCP is installed
+- `urls.base` is configured in `docs/config.yml`
+- A UI route is detected in the code (controller → route → view)
+
+**No Playwright?** The command still works - generates code analysis, mermaid diagrams, and snippets without screenshots.
 
 ### `/docs:sync`
 
@@ -508,10 +561,11 @@ This knowledge powers smarter documentation generation.
 
 ## Intelligent Workflow
 
-### For Single Module (Quick)
+### For Single Flow (Quick)
 
 ```
-/docs:flow campaign          → Auto-discovers, explores, and documents
+/docs:flow "sync users from discord"    → Analyzes code, generates docs with diagrams
+/docs:flow "import payments from csv"   → Includes UI screenshots if route detected
 ```
 
 ### For Entire Project (Batch)
@@ -527,8 +581,10 @@ This knowledge powers smarter documentation generation.
 ### Example Session
 
 ```bash
-# Option A: Document one module
-/docs:flow campaign                        # Full lifecycle docs
+# Option A: Document a specific flow
+/docs:flow "sync users from discord"       # Backend integration
+/docs:flow "import payments from csv"      # Import with UI screenshots
+/docs:flow "how stripe webhooks work"      # Webhook handling
 
 # Option B: Document entire project
 /docs:discover                             # Find all modules
