@@ -10,15 +10,40 @@ import typer
 from rich.console import Console
 from rich.panel import Panel
 
+from . import __version__
 from .chunker import chunk_directory
 from .installer import check_tools, install_docs_module
+
+console = Console()
+
+
+def version_callback(value: bool) -> None:
+    """Print version and exit."""
+    if value:
+        console.print(f"aidocs-cli version {__version__}")
+        raise typer.Exit()
+
 
 app = typer.Typer(
     name="aidocs",
     help="AI-powered documentation generator for web applications.",
     no_args_is_help=True,
 )
-console = Console()
+
+
+@app.callback()
+def main(
+    version: bool = typer.Option(
+        False,
+        "--version",
+        "-v",
+        callback=version_callback,
+        is_eager=True,
+        help="Show version and exit.",
+    ),
+) -> None:
+    """AI-powered documentation generator for web applications."""
+    pass
 
 
 @app.command()
@@ -109,7 +134,6 @@ def check() -> None:
 @app.command()
 def version() -> None:
     """Show version information."""
-    from . import __version__
     console.print(f"aidocs-cli version {__version__}")
 
 
@@ -130,8 +154,6 @@ def update(
         aidocs update              # Update from PyPI
         aidocs update --github     # Update from GitHub (latest)
     """
-    from . import __version__
-
     console.print(f"[blue]Current version: {__version__}[/blue]")
     source = "GitHub" if github else "PyPI"
     console.print(f"[blue]Updating from {source}...[/blue]")
