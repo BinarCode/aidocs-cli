@@ -1,42 +1,45 @@
 ---
 name: docs:flow
-description: Document a complete entity lifecycle or user flow with cross-page tracking
+description: Document a code flow by analyzing the codebase from a human description. No browser required.
 ---
 
-# Document a Complete Flow
+# Document a Code Flow
 
-Generate comprehensive documentation for an entity lifecycle (create → view → edit → delete) or a custom user flow that spans multiple pages.
+Analyze your codebase to document how a specific feature or process works based on a natural language description.
 
 **Usage:**
 ```
-/docs:flow <entity|"custom flow description">
-/docs:flow campaign
-/docs:flow "user registration to first purchase"
-/docs:flow order --lifecycle
+/docs:flow "<description>"
+/docs:flow "sync users from discord"
+/docs:flow "how payments are processed"
+/docs:flow "user registration and onboarding"
+/docs:flow "webhook handling for stripe events"
 ```
 
 **Arguments:**
-- `entity` - Entity name to document its full CRUD lifecycle
-- `"description"` - Custom flow description in quotes
-- `--lifecycle` - Document full create/read/update/delete cycle
-- `--include-errors` - Also document error states and edge cases
+- `"description"` - Natural language description of the flow to document (in quotes)
 
 **What it does:**
-1. Uses knowledge base to understand entity/flow
-2. Navigates through the complete flow with Playwright
-3. Captures screenshots at each step
-4. Documents data that appears across pages
-5. Shows where created data appears in lists/dashboards
-6. Documents validation at each step
-7. Captures success/error states
+1. Parses your description to extract keywords and intent
+2. Searches the codebase for relevant files (jobs, services, controllers, etc.)
+3. Identifies entry points (commands, jobs, webhooks, routes)
+4. Traces the execution flow and builds a call graph
+5. Generates a mermaid sequence diagram
+6. Extracts relevant code snippets with file:line references
+7. Creates comprehensive markdown documentation
 
-**Example output for `/docs:flow campaign --lifecycle`:**
-- How to create a campaign (with validation)
-- Where the campaign appears after creation
-- How to view campaign details
-- How to edit a campaign
-- How to delete a campaign
-- Related: What happens to campaign data elsewhere
+**Output:**
+- `docs/flows/{kebab-case-title}.md` - Complete flow documentation
+
+**Example output for `/docs:flow "sync users from discord"`:**
+- Overview of what the flow does
+- Mermaid sequence diagram showing data flow
+- Entry points (scheduled job, artisan command, webhook)
+- Step-by-step code walkthrough with snippets
+- Related files table
+- Trigger methods (manual, scheduled, event-driven)
+
+**No dependencies required** - Uses only codebase analysis (grep, read).
 
 ---
 

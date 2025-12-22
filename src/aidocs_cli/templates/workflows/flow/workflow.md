@@ -1,575 +1,444 @@
 ---
 name: docs-flow
-description: Document a complete entity lifecycle or custom user flow with cross-page tracking and screenshots.
+description: Document a code flow by analyzing the codebase from a human description. Generates mermaid diagrams and code snippets.
 ---
 
-# Flow Documentation Workflow
+# Code Flow Documentation Workflow
 
-**Goal:** Generate comprehensive step-by-step documentation for an entity's lifecycle (CRUD) or a custom user flow, capturing screenshots and tracking data across pages.
+**Goal:** Analyze the codebase to document how a specific feature or process works, based on a natural language description.
 
-**Your Role:** You are a flow documentarian. You will execute a complete user journey, capture each step, document what happens, and produce a detailed guide.
+**Your Role:** You are a code analyst and documentation specialist. You will search the codebase, trace execution paths, and produce clear documentation with diagrams and code snippets.
 
-**Requires:** Playwright MCP
+**No external dependencies required** - Uses only grep, glob, and read tools.
 
 ---
 
 ## ARGUMENTS PARSING
 
-Parse the arguments:
+Parse the arguments passed to this workflow. Expected format:
 ```
-/docs:flow <entity|"custom description"> [--only <action>] [--include-errors] [--skip-explore] [--output]
+/docs:flow "<description>"
 ```
 
 Examples:
 ```
-/docs:flow campaign                      # Full CRUD lifecycle (default)
-/docs:flow campaign --only create        # Only document create flow
-/docs:flow campaign --only edit          # Only document edit flow
-/docs:flow "user registration"           # Custom flow by description
-/docs:flow order --include-errors        # Include error states
-/docs:flow campaign --skip-explore       # Skip UI exploration (faster)
+/docs:flow "sync users from discord"
+/docs:flow "how payments are processed"
+/docs:flow "user registration flow"
+/docs:flow "webhook handling for stripe"
 ```
 
-**Default behavior:** Documents full lifecycle (create → view → edit → delete)
+Extract:
+- `description` (required) - The natural language description of the flow
 
----
-
-## STEP 1: AUTO-RUN PREREQUISITES
-
-**This command automatically runs discover and explore if needed.**
-
-### 1.1 Check Knowledge Base
-
-Check if `docs/.knowledge/modules/{entity}/` exists:
-
+If description is missing or empty, ask the user:
 ```
-🔍 Checking knowledge base for: campaign
+Please describe the flow you want to document.
 
-□ Module discovery    → Not found
-□ UI exploration      → Not found
-□ Flow documentation  → Starting...
-```
-
-### 1.2 Auto-Run Discover (if missing)
-
-If knowledge base doesn't exist for this module:
-
-```
-📊 Step 1/3: Discovering module structure...
-
-Running: /docs:discover campaign --deep
-
-✓ Entity analyzed: Campaign (12 fields, 3 relationships)
-✓ Routes found: 5 endpoints
-✓ Validation rules: 8 rules extracted
-✓ Components: CampaignForm, CampaignList, CampaignDetail
-
-Knowledge saved to: docs/.knowledge/modules/campaigns/
-```
-
-### 1.3 Auto-Run Explore (if missing or outdated)
-
-If UI exploration hasn't been done (unless --skip-explore):
-
-```
-🖱️ Step 2/3: Exploring UI behaviors...
-
-Running: /docs:explore campaign
-
-✓ Pages explored: 4
-✓ Conditional UI discovered: 3 triggers
-✓ Validation messages captured: 8
-✓ Cross-page effects mapped: 5
-
-Exploration saved to: docs/.knowledge/modules/campaigns/ui-states/
-```
-
-### 1.4 Proceed to Flow Documentation
-
-```
-📚 Step 3/3: Documenting flow...
-
-Knowledge loaded:
-  ✓ Entity: Campaign
-  ✓ Routes: 5 endpoints
-  ✓ UI States: 4 pages mapped
-  ✓ Validation: 8 rules + messages
-
-Ready to document flow.
+Examples:
+  /docs:flow "sync users from discord"
+  /docs:flow "how payments are processed"
 ```
 
 ---
 
-## STEP 2: DETERMINE FLOW TYPE
+## STEP 1: PARSE DESCRIPTION
 
-### If entity name provided:
+Analyze the description to extract searchable terms.
 
-Load knowledge from `docs/.knowledge/modules/{entity}/`
+### 1.1 Extract Keywords
 
-**Detect available flows:**
+From the description, identify:
+- **Action verbs**: sync, import, export, process, handle, create, send, receive, update, delete
+- **Entities/nouns**: users, payments, orders, webhooks, discord, stripe, email
+- **Technical terms**: API, webhook, queue, job, cron, scheduled
+
+### 1.2 Build Search Strategy
+
+Generate search patterns:
+- Direct matches: `discord`, `sync`, `user`
+- Combined patterns: `sync.*user`, `discord.*user`
+- Class name patterns: `SyncDiscord`, `DiscordUser`, `UserSync`
+- File patterns: `*Discord*`, `*Sync*User*`
+
+### 1.3 Identify Target Directories
+
+Based on the action type, prioritize directories:
+
+| Action Type | Primary Directories |
+|-------------|---------------------|
+| Sync/Import | Jobs/, Commands/, Services/ |
+| Webhook | Controllers/, Listeners/, Webhooks/ |
+| API Call | Services/, Clients/, Http/ |
+| Scheduled | Jobs/, Console/, Commands/ |
+| Event | Listeners/, Events/, Subscribers/ |
+| Email | Mail/, Notifications/ |
+
+Display progress:
 ```
-📋 Available flows for: campaign
+📝 Parsing: "sync users from discord"
 
-Standard CRUD:
-  [1] Create campaign
-  [2] View campaign
-  [3] Edit campaign
-  [4] Delete campaign
-  [5] Full lifecycle (all above)
+Extracted:
+  Action: sync (import/sync type)
+  Entities: users, discord
+  Keywords: sync, users, discord, import
 
-Detected custom flows:
-  [6] Duplicate campaign
-  [7] Archive campaign
-  [8] Campaign approval (requires budget > $10k)
-
-Which flow to document?
-```
-
-### If custom description provided:
-
-Parse the description to understand:
-- Starting point
-- End goal
-- Modules involved
-
-```
-📋 Planning flow: "user registration to first purchase"
-
-Detected steps:
-  1. /register - Create account
-  2. /verify-email - Confirm email
-  3. /onboarding - Complete profile
-  4. /products - Browse products
-  5. /cart - Add to cart
-  6. /checkout - Complete purchase
-
-Modules involved: users, products, orders, payments
-
-Proceed with this flow? [Y/n]
+Search strategy:
+  Primary patterns: discord, sync.*user, SyncDiscord
+  Target directories: Jobs/, Commands/, Services/, Listeners/
 ```
 
 ---
 
-## STEP 2: PREPARE FLOW EXECUTION
+## STEP 2: SEARCH CODEBASE
 
-### 2.1 Load Prerequisites
+Search for relevant files using the extracted keywords.
 
-```
-🔧 Preparing flow: Create Campaign
+### 2.1 Search by Keywords
 
-Prerequisites:
-  ✓ Authenticated user required
-  ✓ Test data will be created
-  ✓ Knowledge base loaded
-
-⚠️  This flow will create real data in your application.
-    Proceed? [Y/n/use test environment]
-```
-
-### 2.2 Define Test Data
-
-Generate or ask for test data:
-```
-📝 Test data for campaign creation:
-
-  name: "Documentation Test Campaign"
-  status: "draft"
-  budget: 5000
-  start_date: 2024-02-01
-  end_date: 2024-02-28
-  tags: ["test", "documentation"]
-
-Use this data? [Y/n/customize]
-```
-
----
-
-## STEP 3: EXECUTE FLOW WITH DOCUMENTATION
-
-For each step in the flow:
-
-### Step Template:
+For each keyword, search in relevant directories:
 
 ```
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📍 Step 1: Navigate to create page
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔍 Searching codebase...
 
-Action: Click "New Campaign" button
-URL: /campaigns → /campaigns/create
-
-📸 Capturing screenshot: step-01-navigate.png
-
-Observations:
-  • Empty form displayed
-  • 8 fields visible
-  • "Save as Draft" and "Cancel" buttons
-
-Conditional UI state: initial
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[1/4] Searching "discord" in Jobs/, Commands/, Services/...
+[2/4] Searching "sync.*user" (case-insensitive)...
+[3/4] Searching class names with "Discord"...
+[4/4] Searching file names with "*Sync*" or "*Discord*"...
 ```
 
-### Full CRUD Lifecycle Example:
+### 2.2 Rank Results by Relevance
 
-**STEP 1: Navigate to List**
+Score files based on:
+- Keyword matches in filename (+30 points per match)
+- Keyword matches in content (+10 points per match)
+- Location in expected directory (+20 points)
+- Class/function name matches (+25 points)
+
+### 2.3 Display Found Files
+
 ```
-📍 Starting point: /campaigns
-📸 step-01-list-before.png
+📊 Found 6 relevant files:
 
-Observations:
-  • Campaign list shows 5 existing campaigns
-  • "New Campaign" button in top right
-  • Filter/search available
-```
+  Score  File
+  ─────  ────────────────────────────────────────────
+  95%    app/Jobs/SyncDiscordUsersJob.php
+  88%    app/Services/DiscordService.php
+  75%    app/Console/Commands/SyncDiscordCommand.php
+  60%    app/Listeners/DiscordMemberJoinedListener.php
+  45%    app/Models/User.php (discord_id field)
+  40%    config/services.php (discord config)
 
-**STEP 2: Open Create Form**
-```
-📍 Action: Click "New Campaign"
-📍 URL: /campaigns/create
-📸 step-02-create-form.png
-
-Observations:
-  • Form with 8 fields
-  • Required fields marked with *
-  • Default status: draft
-```
-
-**STEP 3: Fill Form**
-```
-📍 Action: Fill form fields
-📸 step-03-form-filled.png
-
-Data entered:
-  • name: "Documentation Test Campaign"
-  • budget: 5000
-  • ...
-
-Conditional changes observed:
-  • Entering budget revealed "daily limit" field
+Analyzing top 5 files...
 ```
 
-**STEP 4: Submit Form**
-```
-📍 Action: Click "Save"
-📍 Result: Redirected to /campaigns/abc123
-📸 step-04-success.png
+### 2.4 Handle No Results
 
-Observations:
-  • Success toast: "Campaign created successfully"
-  • Now viewing campaign detail page
-  • All entered data displayed correctly
+If no relevant files found:
 ```
+⚠️  No relevant code found for: "sync users from discord"
 
-**STEP 5: Verify in List**
-```
-📍 Action: Navigate to /campaigns
-📸 step-05-list-after.png
+Suggestions:
+  • Try different keywords: "discord import", "user sync"
+  • Check if the feature exists in your codebase
+  • Provide more specific terms
 
-Observations:
-  • New campaign appears in list
-  • Count updated: 5 → 6
-  • Filters work with new campaign
-```
-
-**STEP 6: Edit Campaign**
-```
-📍 Action: Click "Edit" on new campaign
-📍 URL: /campaigns/abc123/edit
-📸 step-06-edit-form.png
-
-Observations:
-  • Form pre-filled with current values
-  • Can modify all fields
-```
-
-**STEP 7: Save Edit**
-```
-📍 Action: Change budget to 7500, click "Save"
-📸 step-07-edit-success.png
-
-Observations:
-  • Redirected to detail page
-  • Budget shows updated value
-```
-
-**STEP 8: Delete Campaign**
-```
-📍 Action: Click "Delete"
-📸 step-08-delete-confirm.png
-
-Observations:
-  • Confirmation modal appears
-  • "This action cannot be undone"
-```
-
-**STEP 9: Confirm Delete**
-```
-📍 Action: Click "Confirm Delete"
-📍 Result: Redirected to /campaigns
-📸 step-09-delete-success.png
-
-Observations:
-  • Campaign removed from list
-  • Count updated: 6 → 5
-  • Toast: "Campaign deleted"
+Would you like to try a different description?
 ```
 
 ---
 
-## STEP 4: DOCUMENT ERROR STATES (if --include-errors)
+## STEP 3: IDENTIFY ENTRY POINTS
 
-### Validation Errors
-```
-📍 Error test: Submit empty form
-📸 error-01-validation.png
+Read the top-ranked files and identify how the flow is triggered.
 
-Errors displayed:
-  • name: "The name field is required"
-  • start_date: "Please select a start date"
+### 3.1 Detect Entry Point Types
 
-Behavior:
-  • Form not submitted
-  • First error field focused
-  • Scroll to error
+Look for these patterns:
+
+**Jobs (Laravel):**
+```php
+class SyncDiscordUsersJob implements ShouldQueue
 ```
 
-### Permission Errors
-```
-📍 Error test: Edit without permission
-📸 error-02-permission.png
-
-Result:
-  • 403 Forbidden
-  • Message: "You don't have permission to edit this campaign"
+**Commands (Artisan):**
+```php
+protected $signature = 'discord:sync-users';
 ```
 
-### Not Found
-```
-📍 Error test: View deleted campaign
-📸 error-03-not-found.png
-
-Result:
-  • 404 page displayed
-  • "Campaign not found"
-  • Link back to list
+**Controllers/Routes:**
+```php
+Route::post('/webhooks/discord', [DiscordController::class, 'handle']);
 ```
 
----
-
-## STEP 5: GENERATE FLOW DOCUMENTATION
-
-Create markdown file in output directory:
-
-### File: `docs/campaigns/lifecycle.md`
-
-```markdown
-# Campaign Lifecycle
-
-This guide covers the complete lifecycle of a campaign: creating, viewing, editing, and deleting.
-
-## Overview
-
-Campaigns are the core entity for organizing your marketing efforts. Each campaign has a name, budget, date range, and various settings.
-
-## Prerequisites
-
-- Logged in as a user with campaign management permissions
-- Access to the Campaigns section
-
----
-
-## Creating a Campaign
-
-### Step 1: Open the create form
-
-From the campaigns list (`/campaigns`), click the **"New Campaign"** button in the top right corner.
-
-![Campaign List](./images/campaign-flow-step-01.png)
-
-### Step 2: Fill in the campaign details
-
-Complete the form with your campaign information:
-
-| Field | Required | Description |
-|-------|----------|-------------|
-| Name | Yes | Unique name for your campaign |
-| Status | No | Draft (default), Active, or Paused |
-| Budget | Conditional | Required when status is Active |
-| Start Date | Yes | When the campaign begins |
-| End Date | Yes | When the campaign ends |
-| Tags | No | Organize campaigns with tags |
-
-![Create Form](./images/campaign-flow-step-02.png)
-
-> **Note:** When you enter a budget amount, additional fields for daily limit and auto-pause will appear.
-
-### Step 3: Save the campaign
-
-Click **"Save"** to create the campaign. You'll be redirected to the campaign detail page.
-
-![Success](./images/campaign-flow-step-03.png)
-
----
-
-## Viewing a Campaign
-
-Click on any campaign in the list to view its details.
-
-![Campaign Detail](./images/campaign-flow-detail.png)
-
-The detail page shows:
-- Campaign name and status
-- Budget and date range
-- Performance metrics (if active)
-- Tags and settings
-
----
-
-## Editing a Campaign
-
-### Step 1: Open edit mode
-
-From the campaign detail page, click **"Edit"** or click the edit icon in the list.
-
-### Step 2: Modify fields
-
-Update any fields as needed. Changes are not saved until you click Save.
-
-![Edit Form](./images/campaign-flow-edit.png)
-
-### Step 3: Save changes
-
-Click **"Save"** to apply your changes.
-
-> **Warning:** Changing status from Active to Draft may affect running ads.
-
----
-
-## Deleting a Campaign
-
-### Step 1: Initiate delete
-
-Click **"Delete"** from the campaign detail page or the list actions menu.
-
-### Step 2: Confirm deletion
-
-A confirmation dialog will appear. Click **"Confirm Delete"** to proceed.
-
-![Delete Confirmation](./images/campaign-flow-delete.png)
-
-> **Warning:** This action cannot be undone. All campaign data and metrics will be permanently deleted.
-
----
-
-## Common Issues
-
-### "The name field is required"
-
-All campaigns must have a name. Enter a unique name for your campaign.
-
-### "Budget is required for active campaigns"
-
-When setting status to "Active", you must specify a budget amount.
-
-### "You don't have permission"
-
-Contact your administrator to request campaign management permissions.
-
----
-
-## Related
-
-- [Campaign Settings](./campaign-settings.md)
-- [Campaign Metrics](./campaign-metrics.md)
-- [Bulk Campaign Operations](./campaign-bulk.md)
-
----
-
-*Documentation generated by [aidocs-cli](https://github.com/binarcode/aidocs-cli) using /docs:flow*
-```
-
----
-
-## STEP 6: UPDATE KNOWLEDGE BASE
-
-Save flow to `docs/.knowledge/modules/{entity}/flows/`:
-
-### lifecycle.json
-```json
+**Listeners:**
+```php
+class DiscordMemberJoinedListener
 {
-  "flow": "lifecycle",
-  "entity": "campaign",
-  "documented_at": "2024-01-15T10:30:00Z",
-  "steps": [
-    {
-      "step": 1,
-      "action": "navigate_to_list",
-      "url": "/campaigns",
-      "screenshot": "campaign-flow-step-01.png"
-    },
-    {
-      "step": 2,
-      "action": "click_create",
-      "url": "/campaigns/create",
-      "screenshot": "campaign-flow-step-02.png"
+    public function handle(DiscordMemberJoined $event)
+```
+
+**Scheduled Tasks:**
+```php
+$schedule->job(SyncDiscordUsersJob::class)->hourly();
+```
+
+### 3.2 Display Entry Points
+
+```
+📍 Entry points identified:
+
+1. Job: SyncDiscordUsersJob
+   └── Scheduled: hourly (app/Console/Kernel.php:23)
+   └── Manual: dispatch(new SyncDiscordUsersJob())
+
+2. Command: discord:sync-users
+   └── Artisan: php artisan discord:sync-users
+   └── File: app/Console/Commands/SyncDiscordCommand.php
+
+3. Listener: DiscordMemberJoinedListener
+   └── Event: DiscordMemberJoined
+   └── Trigger: Webhook from Discord
+
+Primary entry point: SyncDiscordUsersJob (most comprehensive)
+```
+
+---
+
+## STEP 4: TRACE EXECUTION FLOW
+
+Starting from the primary entry point, trace the execution path.
+
+### 4.1 Read Entry Point Code
+
+Read the main method (e.g., `handle()` for jobs/listeners, `__invoke()` for commands).
+
+### 4.2 Build Call Graph
+
+Trace method calls and identify:
+- Service/class instantiations
+- Method calls on dependencies
+- External API calls (HTTP, database, queue)
+- Events dispatched
+- Side effects (logging, notifications)
+
+### 4.3 Display Call Graph
+
+```
+📊 Execution flow from: SyncDiscordUsersJob::handle()
+
+SyncDiscordUsersJob::handle()
+├── $this->discord->getGuildMembers()
+│   └── Http::get('/guilds/{id}/members')        [External: Discord API]
+├── foreach ($members as $member)
+│   ├── $this->mapMemberToUser($member)          [Transform]
+│   └── User::updateOrCreate(...)                [Database: upsert]
+├── event(new DiscordUsersSynced($count))        [Event]
+└── Log::info('Sync complete')                   [Logging]
+
+External calls:
+  • Discord API: GET /guilds/{guild_id}/members
+
+Database operations:
+  • users table: updateOrCreate (upsert)
+
+Events dispatched:
+  • DiscordUsersSynced
+```
+
+---
+
+## STEP 5: GENERATE MERMAID DIAGRAM
+
+Create a sequence diagram showing the flow.
+
+### 5.1 Identify Participants
+
+From the call graph, extract:
+- Trigger (Cron, User, Webhook)
+- Main class (Job, Command, Controller)
+- Services (API clients, business logic)
+- External systems (APIs, databases)
+- Side effects (Events, Notifications)
+
+### 5.2 Generate Diagram
+
+```mermaid
+sequenceDiagram
+    participant Trigger as Cron/Manual
+    participant Job as SyncDiscordUsersJob
+    participant Service as DiscordService
+    participant API as Discord API
+    participant DB as Database
+    participant Event as Event Bus
+
+    Trigger->>Job: dispatch()
+    Job->>Service: getGuildMembers()
+    Service->>API: GET /guilds/{id}/members
+    API-->>Service: members[]
+    Service-->>Job: Collection<Member>
+
+    loop Each member
+        Job->>Job: mapMemberToUser()
+        Job->>DB: User::updateOrCreate()
+    end
+
+    Job->>Event: DiscordUsersSynced
+    Job->>Job: Log::info()
+```
+
+---
+
+## STEP 6: EXTRACT CODE SNIPPETS
+
+Extract the most relevant code sections with file:line references.
+
+### 6.1 Prioritize Code Sections
+
+Extract in order of importance:
+1. Entry point method (handle, __invoke)
+2. Main business logic
+3. External API calls
+4. Database operations
+5. Event dispatching
+
+### 6.2 Format Snippets
+
+For each snippet, include:
+- File path with line numbers
+- Language identifier for syntax highlighting
+- Brief description of what it does
+
+```php
+// app/Jobs/SyncDiscordUsersJob.php:18-35
+public function handle(DiscordService $discord): void
+{
+    $members = $discord->getGuildMembers();
+
+    foreach ($members as $member) {
+        User::updateOrCreate(
+            ['discord_id' => $member['user']['id']],
+            $this->mapMemberToUser($member)
+        );
     }
-    // ... more steps
-  ],
-  "test_data_used": {
-    "name": "Documentation Test Campaign",
-    "budget": 5000
-  },
-  "errors_documented": ["validation", "permission", "not_found"],
-  "output_file": "docs/campaigns/lifecycle.md"
+
+    event(new DiscordUsersSynced($members->count()));
 }
 ```
 
 ---
 
-## STEP 7: COMPLETION SUMMARY
+## STEP 7: GENERATE DOCUMENTATION
+
+Create the markdown file with all gathered information.
+
+### 7.1 Create Output Directory
+
+Ensure `docs/flows/` directory exists.
+
+### 7.2 Generate Filename
+
+Convert description to kebab-case:
+- "sync users from discord" → `sync-users-from-discord.md`
+- "how payments are processed" → `how-payments-are-processed.md`
+
+### 7.3 Write Markdown File
+
+Use this template:
+
+```markdown
+# {Title from Description}
+
+## Overview
+
+{Brief description of what this flow does, based on code analysis}
+
+## Flow Diagram
+
+```mermaid
+{Generated sequence diagram}
+```
+
+## Entry Points
+
+{List of ways this flow can be triggered}
+
+| Trigger | Location | Command/Route |
+|---------|----------|---------------|
+| Scheduled | Kernel.php | Hourly |
+| Manual | Artisan | `php artisan discord:sync-users` |
+| Event | Listener | DiscordMemberJoined |
+
+## Step-by-Step
+
+### 1. {First Step Title}
+
+Location: `{file_path}:{line_number}`
+
+{Description of what this step does}
+
+```{language}
+{code snippet}
+```
+
+### 2. {Second Step Title}
+
+{Continue for each major step...}
+
+## Related Files
+
+| File | Purpose |
+|------|---------|
+| {path} | {description} |
+
+## Configuration
+
+{If any config files are relevant, list them}
+
+- `config/services.php` - Discord API credentials
+- `.env` - DISCORD_TOKEN, DISCORD_GUILD_ID
+
+## Triggers
+
+- **Scheduled**: {description}
+- **Manual**: {command}
+- **Event-driven**: {event name}
+
+---
+
+*Documentation generated by /docs:flow*
+```
+
+### 7.4 Save File
+
+Write to `docs/flows/{kebab-case-title}.md`
+
+---
+
+## STEP 8: COMPLETION SUMMARY
+
+Display final summary:
 
 ```
 ✅ Flow Documentation Complete
 
-📋 Flow: Campaign Lifecycle
-📄 Output: docs/campaigns/lifecycle.md
+📄 Output: docs/flows/sync-users-from-discord.md
 
-📊 Coverage:
-   Steps documented: 9
-   Screenshots captured: 12
-   Error states: 3
-   Related pages: 5
+📊 Analysis Summary:
+   Files analyzed: 6
+   Entry points found: 3
+   Code snippets: 4
+   Diagram: sequenceDiagram
 
-📁 Files created:
-   • docs/campaigns/lifecycle.md
-   • docs/campaigns/images/campaign-flow-step-*.png (12 images)
-
-📁 Knowledge updated:
-   • docs/.knowledge/modules/campaigns/flows/lifecycle.json
+📁 Key files documented:
+   • app/Jobs/SyncDiscordUsersJob.php
+   • app/Services/DiscordService.php
+   • app/Console/Commands/SyncDiscordCommand.php
 
 💡 Suggestions:
-   • Run /docs:flow campaign-approval for the approval flow
-   • Add this to your index: [Campaign Lifecycle](./campaigns/lifecycle.md)
-```
-
----
-
-## CLEANUP
-
-After documenting:
-
-```
-🧹 Cleanup
-
-Test data created during documentation:
-  • Campaign: "Documentation Test Campaign" (ID: abc123)
-
-Options:
-  1. Delete test data (recommended)
-  2. Keep test data
-  3. Mark as test data (add [TEST] prefix)
-
-Choice:
+   • Review the generated documentation for accuracy
+   • Add any domain-specific context
+   • Consider documenting related flows
 ```
 
 ---
@@ -578,7 +447,18 @@ Choice:
 
 | Error | Action |
 |-------|--------|
-| Entity not found | Suggest /docs:discover first |
-| Auth required | Use config credentials |
-| Step failed | Capture error, continue or retry |
-| Data creation failed | Log error, skip dependent steps |
+| No description provided | Ask user for description |
+| No relevant files found | Suggest alternative keywords |
+| File read error | Skip file, note in output |
+| Circular dependencies | Break cycle, note in diagram |
+| Too many files (>20) | Limit to top 10 by relevance |
+
+---
+
+## TIPS
+
+- Be thorough in keyword extraction - more search terms = better results
+- Follow dependency injection to trace service calls
+- Look for interfaces/contracts that may have multiple implementations
+- Check config files for external service credentials
+- Include error handling paths if they're significant to the flow
