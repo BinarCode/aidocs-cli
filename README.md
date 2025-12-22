@@ -104,6 +104,21 @@ aidocs init .
 │  /docs:update --base main           Detect changes, update affected docs     │
 │                                                                              │
 └──────────────────────────────────────────────────────────────────────────────┘
+                                      │
+                                      ▼
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                      ENABLE SEMANTIC SEARCH (optional)                       │
+├──────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  # After docs are generated, setup RAG for AI-powered search:                │
+│  /docs:rag                          ← One command does it all!               │
+│           │                                                                  │
+│           ├──→ Chunks your docs into searchable pieces                       │
+│           ├──→ Creates database migration (pgvector)                         │
+│           ├──→ Generates OpenAI embeddings                                   │
+│           └──→ Outputs sync.sql ready to import                              │
+│                                                                              │
+└──────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ### Quick Commands
@@ -121,6 +136,9 @@ aidocs init .
 
 # Maintain: Update after code changes
 /docs:update --base main
+
+# RAG: Setup semantic search for your docs
+/docs:rag
 ```
 
 ## CLI Commands
@@ -227,6 +245,7 @@ After running `aidocs init`, these commands are available in Claude Code:
 | `/docs:flow "<description>"` | Document a code flow from human description | Optional |
 | `/docs:sync` | Generate embeddings and SQL for vector DB import | No |
 | `/docs:vector-init` | Generate database migration for vector embeddings | No |
+| `/docs:rag` | Setup RAG: chunks → migration → embeddings (all-in-one) | No |
 
 ### `/docs:init`
 
@@ -602,6 +621,45 @@ aidocs chunk
 # 4. Generate embeddings and sync
 /docs:sync
 ```
+
+### `/docs:rag`
+
+**The easy way** - Setup RAG (Retrieval Augmented Generation) for your documentation in one command:
+
+```bash
+/docs:rag                     # Full setup
+/docs:rag --skip-migration    # Skip migration (table already exists)
+/docs:rag --force             # Re-chunk and re-sync everything
+/docs:rag --dry               # Preview what would happen
+```
+
+**What it does automatically:**
+1. Checks/creates documentation chunks (`aidocs chunk`)
+2. Generates database migration (`/docs:vector-init`)
+3. Prompts you to run the migration
+4. Generates embeddings and SQL (`/docs:sync`)
+
+**Output:**
+```
+✅ RAG Setup Complete!
+
+📊 Summary:
+   Documentation files: 8
+   Chunks created: 24
+   Embeddings generated: 24
+
+📄 Files created:
+   ✓ docs/.chunks/manifest.json
+   ✓ database/migrations/..._create_doc_embeddings_table.php
+   ✓ docs/.chunks/sync.sql
+
+🚀 Final step:
+   psql $DATABASE_URL -f docs/.chunks/sync.sql
+```
+
+**Requirements:**
+- PostgreSQL with [pgvector](https://github.com/pgvector/pgvector) extension
+- `OPENAI_API_KEY` environment variable
 
 ## Knowledge Base
 
