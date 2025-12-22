@@ -66,7 +66,21 @@ aidocs init .
                                       │
                                       ▼
 ┌──────────────────────────────────────────────────────────────────────────────┐
-│                    OPTION A: Document a Code Flow                            │
+│                    OPTION A: Document a Single Page                          │
+├──────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  /docs:generate https://myapp.com/users    ← Give it any URL!                │
+│           │                                                                  │
+│           ├──→ Takes screenshots with Playwright                             │
+│           ├──→ Analyzes codebase for that route                              │
+│           ├──→ Documents UI elements and interactions                        │
+│           └──→ Creates docs/users/index.md                                   │
+│                                                                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+                                      │
+                                      ▼
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                    OPTION B: Document a Code Flow                            │
 ├──────────────────────────────────────────────────────────────────────────────┤
 │                                                                              │
 │  /docs:flow "sync users from discord"    ← Describe the flow in words!       │
@@ -81,7 +95,7 @@ aidocs init .
                                       │
                                       ▼
 ┌──────────────────────────────────────────────────────────────────────────────┐
-│                    OPTION B: Document Entire Project                         │
+│                    OPTION C: Document Entire Project                         │
 ├──────────────────────────────────────────────────────────────────────────────┤
 │                                                                              │
 │  /docs:discover                     Scan codebase, find all modules          │
