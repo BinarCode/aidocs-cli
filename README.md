@@ -301,6 +301,7 @@ After running `aidocs init`, these commands are available in Claude Code:
 | `/docs:rag-vectors` | Generate embeddings and SQL for vector DB import | No |
 | `/docs:rag-init` | Generate database migration for vector embeddings | No |
 | `/docs:rag` | Setup RAG: chunks → migration → embeddings (all-in-one) | No |
+| `/docs:export-pdf` | Export markdown documentation to PDF with TOC | Yes (Playwright) |
 
 ### `/docs:init`
 
@@ -723,6 +724,52 @@ aidocs rag-vectors
 **Requirements:**
 - PostgreSQL with [pgvector](https://github.com/pgvector/pgvector) extension
 - `OPENAI_API_KEY` environment variable
+
+### `/docs:export-pdf`
+
+Export markdown documentation to PDF with auto-generated table of contents using Playwright MCP.
+
+```bash
+/docs:export-pdf docs/pages/dashboard.md                    # Export single file
+/docs:export-pdf docs/flows/sync-users.md --output manual.pdf  # Custom filename
+```
+
+**What it does:**
+1. Reads the markdown file
+2. Extracts H1/H2 headings to build a clickable table of contents
+3. Converts markdown to styled HTML (code blocks, tables, images)
+4. Uses Playwright MCP to render and export as PDF
+5. Saves to `docs/exports/` directory
+
+**Output:** `docs/exports/{filename}.pdf`
+
+**Features:**
+- Auto-generated TOC from H1/H2 headings with clickable links
+- PDF-friendly styling (page breaks at H1, code block formatting)
+- Embedded images (converted to base64)
+- A4 format with proper margins
+
+**Example:**
+```
+📄 Exporting: docs/pages/dashboard.md
+
+📑 Table of Contents:
+   • Dashboard Overview
+     • Key Metrics
+     • Navigation
+   • Components
+   • Configuration
+
+🖨️ Rendering PDF...
+   Format: A4
+   Pages: 5
+
+✅ PDF exported!
+   📁 docs/exports/dashboard.pdf (245 KB)
+```
+
+**Requirements:**
+- Playwright MCP must be available
 
 ## Knowledge Base
 
