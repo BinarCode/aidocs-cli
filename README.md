@@ -285,7 +285,7 @@ After running `aidocs init`, these commands are available in Claude Code:
 | `/docs:explore <module>` | Interactive UI exploration with Playwright | Yes |
 | `/docs:flow "<description>"` | Document a code flow from human description | Optional |
 | `/docs:rag-vectors` | Generate embeddings and SQL for vector DB import | No |
-| `/docs:vector-init` | Generate database migration for vector embeddings | No |
+| `/docs:rag-init` | Generate database migration for vector embeddings | No |
 | `/docs:rag` | Setup RAG: chunks → migration → embeddings (all-in-one) | No |
 
 ### `/docs:init`
@@ -598,14 +598,14 @@ Run with:
    psql $DATABASE_URL -f docs/.chunks/sync.sql
 ```
 
-### `/docs:vector-init`
+### `/docs:rag-init`
 
 Generate a database migration for storing documentation embeddings with pgvector.
 
 ```bash
-/docs:vector-init                     # Default: 1536 dimensions
-/docs:vector-init --dimensions 3072   # For text-embedding-3-large
-/docs:vector-init --table my_docs     # Custom table name
+/docs:rag-init                     # Default: 1536 dimensions
+/docs:rag-init --dimensions 3072   # For text-embedding-3-large
+/docs:rag-init --table my_docs     # Custom table name
 ```
 
 **What it does:**
@@ -649,7 +649,7 @@ doc_embeddings
 **Example workflow:**
 ```bash
 # 1. Generate migration
-/docs:vector-init
+/docs:rag-init
 
 # 2. Run migration
 php artisan migrate          # Laravel
@@ -676,7 +676,7 @@ aidocs rag-vectors
 
 **What it does automatically:**
 1. Checks/creates documentation chunks (`aidocs rag-chunks`)
-2. Generates database migration (`/docs:vector-init`)
+2. Generates database migration (`/docs:rag-init`)
 3. Prompts you to run the migration
 4. Generates embeddings and SQL (`aidocs rag-vectors`)
 

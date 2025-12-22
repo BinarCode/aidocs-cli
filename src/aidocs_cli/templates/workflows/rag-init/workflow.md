@@ -1,9 +1,9 @@
 ---
-name: docs-vector-init
+name: docs-rag-init
 description: Generate database migration for documentation embeddings with pgvector. Detects project framework and creates appropriate migration file.
 ---
 
-# Vector Database Initialization Workflow
+# RAG Database Initialization Workflow
 
 **Goal:** Create a database migration for storing documentation embeddings using PostgreSQL with pgvector.
 
@@ -15,7 +15,7 @@ description: Generate database migration for documentation embeddings with pgvec
 
 Parse the arguments:
 ```
-/docs:vector-init [--dimensions 1536|3072] [--table doc_embeddings]
+/docs:rag-init [--dimensions 1536|3072] [--table doc_embeddings]
 ```
 
 - `--dimensions`: Vector dimensions (default: 1536 for text-embedding-3-small)

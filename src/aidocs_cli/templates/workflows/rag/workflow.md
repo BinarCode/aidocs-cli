@@ -17,7 +17,7 @@ description: Setup RAG (Retrieval Augmented Generation) for your documentation i
 /docs:rag
     │
     ├──→ STEP 1: Check/create chunks (aidocs rag-chunks)
-    ├──→ STEP 2: Generate database migration (/docs:vector-init)
+    ├──→ STEP 2: Generate database migration (/docs:rag-init)
     ├──→ STEP 3: Prompt user to run migration
     └──→ STEP 4: Generate embeddings and SQL (aidocs rag-vectors)
 ```
@@ -127,9 +127,9 @@ If no migration found:
 📝 Generating database migration...
 ```
 
-**Execute /docs:vector-init workflow inline:**
+**Execute /docs:rag-init workflow inline:**
 
-LOAD and EXECUTE the full workflow from @.claude/workflows/docs/vector-init/workflow.md
+LOAD and EXECUTE the full workflow from @.claude/workflows/docs/rag-init/workflow.md
 
 This will:
 1. Detect framework (Laravel, Prisma, TypeORM, etc.)
