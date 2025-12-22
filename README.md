@@ -226,6 +226,7 @@ After running `aidocs init`, these commands are available in Claude Code:
 | `/docs:explore <module>` | Interactive UI exploration with Playwright | Yes |
 | `/docs:flow "<description>"` | Document a code flow from human description | Optional |
 | `/docs:sync` | Generate embeddings and SQL for vector DB import | No |
+| `/docs:vector-init` | Generate database migration for vector embeddings | No |
 
 ### `/docs:init`
 
@@ -535,6 +536,71 @@ Generate embeddings and SQL for syncing documentation to a PostgreSQL vector dat
 
 Run with:
    psql $DATABASE_URL -f docs/.chunks/sync.sql
+```
+
+### `/docs:vector-init`
+
+Generate a database migration for storing documentation embeddings with pgvector.
+
+```bash
+/docs:vector-init                     # Default: 1536 dimensions
+/docs:vector-init --dimensions 3072   # For text-embedding-3-large
+/docs:vector-init --table my_docs     # Custom table name
+```
+
+**What it does:**
+1. Detects your framework (Laravel, Prisma, TypeORM, Drizzle, Django)
+2. Generates the appropriate migration file
+3. Creates table with pgvector support for similarity search
+
+**Supported Frameworks:**
+
+| Framework | Detection | Output |
+|-----------|-----------|--------|
+| Laravel | `composer.json` | PHP migration with `$table->vector()` |
+| Prisma | `schema.prisma` | Prisma schema addition |
+| TypeORM | `package.json` | TypeScript migration class |
+| Drizzle | `drizzle-orm` | Schema + SQL migration |
+| Django | `manage.py` | Django migration with pgvector |
+| Fallback | None detected | Raw PostgreSQL SQL |
+
+**Table Structure:**
+
+```
+doc_embeddings
+├── id             UUID PRIMARY KEY
+├── file_path      VARCHAR(500)      # Path to .md file
+├── content        TEXT              # Document content
+├── chunk_index    INTEGER           # For large docs split into chunks
+├── title          VARCHAR(255)      # Document title
+├── metadata       JSONB             # Tags, module, category, etc.
+├── embedding      VECTOR(1536)      # OpenAI embedding
+├── created_at     TIMESTAMP
+└── updated_at     TIMESTAMP
+```
+
+**Indexes:**
+- `file_path` - B-tree index for path lookups
+- `embedding` - HNSW index for fast vector similarity search
+
+**Requirements:**
+- PostgreSQL with [pgvector](https://github.com/pgvector/pgvector) extension
+
+**Example workflow:**
+```bash
+# 1. Generate migration
+/docs:vector-init
+
+# 2. Run migration
+php artisan migrate          # Laravel
+npx prisma migrate dev       # Prisma
+python manage.py migrate     # Django
+
+# 3. Chunk your docs
+aidocs chunk
+
+# 4. Generate embeddings and sync
+/docs:sync
 ```
 
 ## Knowledge Base
