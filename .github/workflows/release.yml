@@ -17,97 +17,45 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Get current version
-        id: current
+      - name: Get version from pyproject.toml
+        id: version
         run: |
           VERSION=$(grep -m1 'version = ' pyproject.toml | cut -d'"' -f2)
           echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "Current version: $VERSION"
-
-      - name: Determine version bump
-        id: bump
-        run: |
-          COMMIT_MSG=$(git log -1 --pretty=%B)
-          echo "Commit message: $COMMIT_MSG"
-
-          # Check if commit message indicates minor bump (feat/feature)
-          if echo "$COMMIT_MSG" | grep -qiE "^feat(\(.*\))?:|^feature(\(.*\))?:"; then
-            echo "bump=minor" >> $GITHUB_OUTPUT
-          else
-            echo "bump=patch" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Calculate new version
-        id: new
-        run: |
-          CURRENT="${{ steps.current.outputs.version }}"
-          BUMP="${{ steps.bump.outputs.bump }}"
-
-          IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT"
-
-          if [ "$BUMP" = "minor" ]; then
-            MINOR=$((MINOR + 1))
-            PATCH=0
-          else
-            PATCH=$((PATCH + 1))
-          fi
-
-          NEW_VERSION="$MAJOR.$MINOR.$PATCH"
-          echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
-          echo "New version: $NEW_VERSION (bump: $BUMP)"
+          echo "Version from pyproject.toml: $VERSION"
 
       - name: Check if version already released
         id: check
         run: |
-          NEW_VERSION="${{ steps.new.outputs.version }}"
-          if git tag | grep -q "^v$NEW_VERSION$"; then
+          VERSION="${{ steps.version.outputs.version }}"
+          if git tag | grep -q "^v$VERSION$"; then
             echo "skip=true" >> $GITHUB_OUTPUT
-            echo "Version v$NEW_VERSION already exists, skipping"
+            echo "Version v$VERSION already exists, skipping"
           else
             echo "skip=false" >> $GITHUB_OUTPUT
+            echo "Version v$VERSION not released yet"
           fi
-
-      - name: Update version in files
-        if: steps.check.outputs.skip == 'false'
-        run: |
-          NEW_VERSION="${{ steps.new.outputs.version }}"
-
-          # Update pyproject.toml
-          sed -i "s/^version = \".*\"/version = \"$NEW_VERSION\"/" pyproject.toml
-
-          # Update __init__.py
-          sed -i "s/__version__ = \".*\"/__version__ = \"$NEW_VERSION\"/" src/aidocs_cli/__init__.py
-
-          echo "Updated version to $NEW_VERSION"
-
-      - name: Commit version bump
-        if: steps.check.outputs.skip == 'false'
-        run: |
-          NEW_VERSION="${{ steps.new.outputs.version }}"
-          git config user.name "GitHub Actions"
-          git config user.email "actions@github.com"
-          git add pyproject.toml src/aidocs_cli/__init__.py
-          git commit -m "chore: bump version to $NEW_VERSION [skip ci]"
-          git push
 
       - name: Create tag and release
         if: steps.check.outputs.skip == 'false'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          NEW_VERSION="${{ steps.new.outputs.version }}"
-          COMMIT_MSG=$(git log -2 --pretty=%B | tail -n +3 | head -1)
+          VERSION="${{ steps.version.outputs.version }}"
+          COMMIT_MSG=$(git log -1 --pretty=%B | head -1)
 
           # Create tag
-          git tag -a "v$NEW_VERSION" -m "Release v$NEW_VERSION"
-          git push origin "v$NEW_VERSION"
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git tag -a "v$VERSION" -m "Release v$VERSION"
+          git push origin "v$VERSION"
 
           # Create release
-          NOTES="## Changes
+          gh release create "v$VERSION" \
+            --title "v$VERSION" \
+            --notes "## Changes
 
-          ${COMMIT_MSG}
+${COMMIT_MSG}
 
-          ---
-          *Auto-generated release*"
-
-          gh release create "v$NEW_VERSION" --title "v$NEW_VERSION" --notes "$NOTES"
+---
+*Auto-generated release*"
