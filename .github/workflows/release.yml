@@ -10,6 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      id-token: write  # Required for trusted publishing to PyPI
 
     steps:
       - uses: actions/checkout@v4
@@ -57,3 +58,24 @@ jobs:
           ---
           *Auto-generated release*
           EOF
+
+      # Publish to PyPI after release is created
+      - name: Install uv
+        if: steps.check.outputs.skip == 'false'
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: "latest"
+
+      - name: Set up Python
+        if: steps.check.outputs.skip == 'false'
+        run: uv python install 3.11
+
+      - name: Build package
+        if: steps.check.outputs.skip == 'false'
+        run: uv build
+
+      - name: Publish to PyPI
+        if: steps.check.outputs.skip == 'false'
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          skip-existing: true
