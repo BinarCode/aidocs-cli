@@ -129,8 +129,18 @@ def generate_mkdocs_config(
         },
         "markdown_extensions": [
             "pymdownx.highlight",
-            "pymdownx.superfences",
-            "pymdownx.tabbed",
+            {
+                "pymdownx.superfences": {
+                    "custom_fences": [
+                        {
+                            "name": "mermaid",
+                            "class": "mermaid",
+                            "format": "!!python/name:pymdownx.superfences.fence_code_format",
+                        }
+                    ]
+                }
+            },
+            {"pymdownx.tabbed": {"alternate_style": True}},
             "pymdownx.details",
             "admonition",
             "tables",
@@ -143,6 +153,9 @@ def generate_mkdocs_config(
         "extra": {
             "generator": False,
         },
+        "extra_javascript": [
+            "https://unpkg.com/mermaid@10/dist/mermaid.min.js",
+        ],
     }
 
     if nav:
