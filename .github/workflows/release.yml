@@ -59,7 +59,7 @@ jobs:
           *Auto-generated release*
           EOF
 
-      # Publish to PyPI after release is created
+      # Publish to PyPI
       - name: Install uv
         if: steps.check.outputs.skip == 'false'
         uses: astral-sh/setup-uv@v4
@@ -79,3 +79,64 @@ jobs:
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           skip-existing: true
+
+      # Update Homebrew formula
+      - name: Get release info for Homebrew
+        if: steps.check.outputs.skip == 'false'
+        id: homebrew
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          URL="https://github.com/${{ github.repository }}/archive/refs/tags/v$VERSION.tar.gz"
+          SHA256=$(curl -sL "$URL" | shasum -a 256 | cut -d' ' -f1)
+
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "url=$URL" >> $GITHUB_OUTPUT
+          echo "sha256=$SHA256" >> $GITHUB_OUTPUT
+
+          echo "Homebrew URL: $URL"
+          echo "Homebrew SHA256: $SHA256"
+
+      - name: Checkout homebrew-aidocs
+        if: steps.check.outputs.skip == 'false'
+        uses: actions/checkout@v4
+        with:
+          repository: binarcode/homebrew-aidocs
+          token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          path: homebrew-aidocs
+
+      - name: Update Homebrew formula
+        if: steps.check.outputs.skip == 'false'
+        run: |
+          cat > homebrew-aidocs/Formula/aidocs.rb << EOF
+          class Aidocs < Formula
+            include Language::Python::Virtualenv
+
+            desc "AI-powered documentation generator CLI for Claude Code"
+            homepage "https://github.com/binarcode/aidocs-cli"
+            url "${{ steps.homebrew.outputs.url }}"
+            sha256 "${{ steps.homebrew.outputs.sha256 }}"
+            license "MIT"
+
+            depends_on "python@3.11"
+
+            def install
+              venv = virtualenv_create(libexec, "python3.11")
+              venv.pip_install "aidocs==${{ steps.homebrew.outputs.version }}"
+              bin.install_symlink libexec/"bin/aidocs"
+            end
+
+            test do
+              assert_match "aidocs", shell_output("#{bin}/aidocs version")
+            end
+          end
+          EOF
+
+      - name: Commit and push Homebrew formula
+        if: steps.check.outputs.skip == 'false'
+        run: |
+          cd homebrew-aidocs
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add Formula/aidocs.rb
+          git diff --staged --quiet || git commit -m "Update aidocs to ${{ steps.homebrew.outputs.version }}"
+          git push

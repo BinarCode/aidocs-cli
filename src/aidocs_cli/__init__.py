@@ -1,6 +1,6 @@
 """AI-powered documentation generator CLI for Claude Code projects."""
 
-__version__ = "0.15.3"
+__version__ = "0.15.4"
 
 from .cli import app
 
