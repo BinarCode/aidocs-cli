@@ -11,12 +11,46 @@ description: Update existing documentation based on git diff between current bra
 
 ---
 
-## LOAD CONFIGURATION
+## STEP 0: FIND AND LOAD CONFIGURATION
 
-Check if `docs/config.yml` exists and load settings:
-- `output.directory` → Where docs are stored
+**CRITICAL:** Before doing anything else, locate and load the configuration file.
+
+### 0.1 Search for Config File
+
+Search for `aidocs-config.yml` in this order:
+1. `docs/aidocs-config.yml` (default location)
+2. `./aidocs-config.yml` (project root)
+
+**Also check for old config format:**
+If `docs/config.yml` exists but `aidocs-config.yml` doesn't:
+```
+⚠️  Found old config format: docs/config.yml
+
+Please rename it to: docs/aidocs-config.yml
+Then run this command again.
+```
+
+### 0.2 If Config Found
+
+Load the config and extract:
+- `docs_root` → Base directory for all documentation (default: `docs`)
 - `style.tone` → Writing style to maintain
 - `stack` → Tech stack info for understanding changes
+
+### 0.3 If Config NOT Found
+
+Display message and STOP:
+```
+⚠️  No aidocs-config.yml found.
+
+This workflow requires a configuration file to run.
+
+Would you like to create one now?
+1. Yes - run /docs:init to set up configuration
+2. No - I'll create docs/aidocs-config.yml manually
+```
+
+**IMPORTANT:** Do NOT proceed without config. Config is required.
 
 ---
 
@@ -24,12 +58,12 @@ Check if `docs/config.yml` exists and load settings:
 
 Parse the arguments passed to this workflow:
 ```
-/docs:update [--base main|staging|<branch>] [--output ./docs] [--dry-run] [--screenshots]
+/docs:update [--base main|staging|<branch>] [--output ./{docs_root}] [--dry-run] [--screenshots]
 ```
 
 Extract:
 - `base` (optional) - Branch to diff against (default: main)
-- `output` (optional) - Docs directory (default from config or ./docs)
+- `output` (optional) - Docs directory (default from config `docs_root`)
 - `dry-run` (optional) - Show what would be updated without making changes
 - `screenshots` (optional) - Capture new screenshots for changed pages
 

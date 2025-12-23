@@ -2,6 +2,10 @@
 
 AI-powered documentation generator for web applications.
 
+[![Watch the video](https://img.youtube.com/vi/cmwt4XizcTw/maxresdefault.jpg)](https://youtu.be/cmwt4XizcTw)
+
+▶️ **[Watch the demo on YouTube](https://youtu.be/cmwt4XizcTw)**
+
 ## How It Works
 
 aidocs generates comprehensive documentation by combining **three sources of truth**:
@@ -27,44 +31,34 @@ This produces documentation that's accurate to both the code AND the actual user
                     └────────────────────────┘
 ```
 
-## Installation
+## Quick Start
 
 ```bash
-# Install from PyPI
+# 1. Install the CLI
 uv tool install aidocs
 
-# Or install from GitHub
+# 2. Add to your project
+cd your-project
+aidocs init .
+
+# 3. Generate docs (in Claude Code)
+/docs:generate https://myapp.com/dashboard
+```
+
+**Alternative installation:**
+```bash
+# From GitHub (latest)
 uv tool install aidocs --from git+https://github.com/binarcode/aidocs-cli.git
 
 # Or use pipx
 pipx install aidocs
 ```
 
-## Updating
-
-When a new version is released, update the CLI and reinstall commands in your project:
-
+**Updating:**
 ```bash
-# 1. Update the CLI
-aidocs update
-
-# 2. Reinstall commands in your project (adds new slash commands)
-cd your-project
-aidocs init . --force
-```
-
-The `--force` flag overwrites existing command files, adding any new commands from the latest version.
-
-**Tip:** Run `aidocs update --github` to get the latest unreleased features from GitHub.
-
-## Quick Start
-
-```bash
-# Install the CLI
-uv tool install aidocs
-
-# Add to your project
-aidocs init .
+aidocs update                  # Update from PyPI
+aidocs update --github         # Update from GitHub (latest)
+aidocs init . --force          # Reinstall commands in project
 ```
 
 ## Usage Flow
@@ -258,6 +252,43 @@ docs/
 
 **Next step:** Run `aidocs rag-vectors` to generate embeddings
 
+### `aidocs export-pdf`
+
+Export markdown documentation to PDF with auto-generated table of contents.
+
+```bash
+aidocs export-pdf docs/projects/index.md                    # Export to docs/exports/
+aidocs export-pdf docs/flows/sync-users.md -o manual.pdf    # Custom output path
+```
+
+**Options:**
+| Option | Description |
+|--------|-------------|
+| `--output, -o` | Output PDF path (default: `docs/exports/{name}.pdf`) |
+
+**What it does:**
+1. Reads the markdown file
+2. Extracts H1/H2 headings for table of contents
+3. Converts markdown to styled HTML
+4. Uses Chrome/Chromium headless to render PDF
+5. Saves with proper page breaks and formatting
+
+**Output:**
+```
+╭──────────── Success ────────────╮
+│ PDF exported successfully!      │
+│                                 │
+│ Title: Projects Overview        │
+│ TOC entries: 8                  │
+│ Size: 245.3 KB                  │
+│                                 │
+│ Output: docs/exports/index.pdf  │
+╰─────────────────────────────────╯
+```
+
+**Requirements:**
+- Chrome or Chromium installed (uses headless mode)
+
 ### `aidocs rag-vectors`
 
 Generate embeddings and SQL for vector database import.
@@ -302,6 +333,8 @@ psql $DATABASE_URL -f docs/.chunks/sync.sql
 ### `aidocs serve`
 
 Serve documentation with live reload using MkDocs Material theme.
+
+![aidocs serve](docs/aidocs-serve.png)
 
 ```bash
 aidocs serve                    # Serve docs/ on port 8000

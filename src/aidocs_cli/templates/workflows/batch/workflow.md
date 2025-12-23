@@ -11,12 +11,56 @@ description: Generate documentation for multiple pages from a list of URLs or a 
 
 ---
 
+## STEP 0: FIND AND LOAD CONFIGURATION
+
+**CRITICAL:** Before doing anything else, locate and load the configuration file.
+
+### 0.1 Search for Config File
+
+Search for `aidocs-config.yml` in this order:
+1. `docs/aidocs-config.yml` (default location)
+2. `./aidocs-config.yml` (project root)
+
+**Also check for old config format:**
+If `docs/config.yml` exists but `aidocs-config.yml` doesn't:
+```
+⚠️  Found old config format: docs/config.yml
+
+Please rename it to: docs/aidocs-config.yml
+Then run this command again.
+```
+
+### 0.2 If Config Found
+
+Load the config and extract:
+- `docs_root` → Base directory for all documentation (default: `docs`)
+- `urls.base` → Base URL for page navigation
+- `auth.method` → How to authenticate
+- `skip_pages` → Patterns to exclude from batch
+
+### 0.3 If Config NOT Found
+
+Display message and STOP:
+```
+⚠️  No aidocs-config.yml found.
+
+This workflow requires a configuration file to run.
+
+Would you like to create one now?
+1. Yes - run /docs:init to set up configuration
+2. No - I'll create docs/aidocs-config.yml manually
+```
+
+**IMPORTANT:** Do NOT proceed without config. Config is required.
+
+---
+
 ## ARGUMENTS PARSING
 
 Parse the arguments. Expected formats:
 ```
-/docs:batch <urls-file> [--auth user:pass] [--output ./docs]
-/docs:batch --discover [--base-url https://app.example.com] [--auth user:pass] [--output ./docs]
+/docs:batch <urls-file> [--auth user:pass] [--output ./{docs_root}]
+/docs:batch --discover [--base-url https://app.example.com] [--auth user:pass] [--output ./{docs_root}]
 ```
 
 **Option 1: URLs file**
@@ -77,8 +121,8 @@ Proceed with all? [Y/n] Or type numbers to select specific pages.
 
 **Load credentials using same logic as /docs:generate:**
 
-Check `auth.method` in `docs/config.yml`:
-1. **method: "file"** → Read from `docs/.auth`
+Check `auth.method` in config (loaded in Step 0):
+1. **method: "file"** → Read from `{docs_root}/.auth`
 2. **method: "env"** → Read from environment variables
 3. **method: "manual"** → Require `--auth` flag
 4. **--auth flag** always overrides stored credentials
@@ -138,7 +182,7 @@ After all pages processed, create summary:
    ⚠ {warning_count} pages with warnings
    ✗ {error_count} pages failed
 
-📁 Output directory: {output_path}
+📁 Output directory: {docs_root}/
 
 📄 Files created:
    - dashboard.md
@@ -156,7 +200,7 @@ After all pages processed, create summary:
 ```
 
 ### Index File:
-Create `{output}/index.md` with links to all generated docs:
+Create `{docs_root}/index.md` with links to all generated docs:
 
 ```markdown
 # Documentation Index

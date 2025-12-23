@@ -18,7 +18,8 @@
       "Bash(brew install:*)",
       "Bash(brew untap:*)",
       "Bash(aidocs version:*)",
-      "Bash(uv pip install:*)"
+      "Bash(uv pip install:*)",
+      "Bash(git checkout:*)"
     ]
   }
 }

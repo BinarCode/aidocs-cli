@@ -20,16 +20,66 @@ description: Document a code flow with screenshots, diagrams, and user-friendly 
 
 ---
 
-## LOAD CONFIGURATION
+## STEP 0: FIND AND LOAD CONFIGURATION
 
-**First, check if `docs/config.yml` exists in the project root.**
+**CRITICAL:** Before doing anything else, locate and load the configuration file.
 
-If it exists, load:
+### 0.1 Search for Config File
+
+Search for `aidocs-config.yml` in this order:
+1. `docs/aidocs-config.yml` (default location)
+2. `./aidocs-config.yml` (project root)
+
+**Also check for old config format:**
+If `docs/config.yml` exists but `aidocs-config.yml` doesn't:
+```
+⚠️  Found old config format: docs/config.yml
+
+Please rename it to: docs/aidocs-config.yml
+Then run this command again.
+```
+
+### 0.2 If Config Found
+
+Load the config and extract these values:
+- `docs_root` → Base directory for all documentation (default: `docs`)
 - `urls.base` → Base URL for screenshots (e.g., `https://app.example.com`)
 - `auth.method` → How to authenticate for screenshots
-- `output.directory` → Where to save documentation
 
-Store for later use in screenshot capture step.
+### 0.3 If Config NOT Found
+
+Display message and STOP:
+```
+⚠️  No aidocs-config.yml found.
+
+This workflow requires a configuration file to run.
+
+Would you like to create one now?
+1. Yes - run /docs:init to set up configuration
+2. No - I'll create docs/aidocs-config.yml manually
+```
+
+**If user chooses "Yes":** Execute the `/docs:init` workflow to walk through setup.
+**If user chooses "No":** Stop and provide this minimal config template:
+
+```yaml
+# Minimal aidocs-config.yml
+docs_root: docs
+urls:
+  base: "https://your-app.com"
+auth:
+  required: false
+```
+
+**IMPORTANT:** Do NOT proceed without config. Config is required.
+
+### 0.4 Resolve Paths
+
+Once config is loaded, set these path variables:
+- `{docs_root}` → Use for all output paths (from config, default: `docs`)
+- `{docs_root}/.auth` → Credentials file location
+- `{docs_root}/flows/` → Flow documentation folder
+- `{docs_root}/flows/images/` → Flow screenshots folder
 
 ---
 
@@ -363,14 +413,64 @@ Or run with --no-screenshots flag (not recommended).
 
 ### 6.2 Authenticate (if needed)
 
-Load credentials from `docs/config.yml` or `docs/.auth`:
+**IMPORTANT:** Before capturing screenshots, check if authentication is required.
+
+**Step 1: Check for credentials file**
+
+Read the `{docs_root}/.auth` file if it exists:
+
+```yaml
+# {docs_root}/.auth format:
+username: "user@example.com"
+password: "secretpassword"
+login_url: "/login"  # optional, defaults to /login
+```
+
+**Step 2: Check config for auth settings**
+
+The config was already loaded in Step 0. Use:
+- `auth.method` - How to authenticate (file, env, manual)
+- `urls.base` - Base URL for login page
+
+**Step 3: Perform login if credentials found**
+
+If `{docs_root}/.auth` exists and contains credentials:
+
+1. Navigate to login URL: `{base_url}/login` (or custom `login_url`)
+2. Wait for login form to load
+3. Fill username field (look for: input[type="email"], input[name="email"], #email)
+4. Fill password field (look for: input[type="password"], input[name="password"], #password)
+5. Click submit button (look for: button[type="submit"], input[type="submit"], button containing "Login"/"Sign in")
+6. Wait for redirect/navigation to complete
+7. Verify login succeeded (check for dashboard, user menu, or absence of login form)
 
 ```
 🔐 Authenticating...
-   Using credentials from docs/.auth
+   Reading credentials from {docs_root}/.auth
+   Navigating to: https://app.example.com/login
+   Filling login form...
+   ✓ Logged in successfully
 ```
 
-### 6.3 Navigate to UI Page
+**If login fails:**
+```
+⚠️ Authentication failed
+   Could not log in with provided credentials.
+   Continuing without screenshots.
+```
+
+### 6.3 Set Viewport Size
+
+**IMPORTANT:** Always set a consistent viewport size before capturing screenshots:
+
+```javascript
+// Use browser_resize to set viewport
+await page.setViewportSize({ width: 1440, height: 900 });
+```
+
+This ensures consistent positioning of highlight elements.
+
+### 6.4 Navigate to UI Page
 
 Navigate to the page where the flow is initiated:
 
@@ -381,17 +481,122 @@ Navigate to the page where the flow is initiated:
    Waiting for network idle...
 ```
 
-### 6.4 Capture Screenshots
+### 6.5 Apply Spotlight Highlight (When Appropriate)
 
-Capture relevant screenshots:
+**Use highlights strategically - only for interactive elements the user needs to find or click.**
 
-**Screenshot 1: Page with trigger element**
+**WHEN TO USE highlights:**
+- Buttons the user needs to click
+- Form fields the user needs to fill
+- Links or menu items to navigate
+- Specific UI elements in a multi-step flow
+
+**WHEN NOT TO use highlights:**
+- Overview/context screenshots showing the full page
+- Informational screens with no specific action
+- Dashboard views meant to show layout
+- Screenshots that are purely illustrative
+
+The spotlight effect:
+- Darkens the entire page with a semi-transparent overlay
+- Creates a "cutout" around the highlighted element
+- Adds a white glowing border for visibility
+
+**Use `browser_run_code` with this pattern:**
+
+```javascript
+async (page) => {
+  // Clear any existing highlights
+  await page.evaluate(() => {
+    document.querySelectorAll('[data-doc-highlight]').forEach(el => el.remove());
+  });
+
+  // Get the element to highlight
+  const element = page.getByRole('button', { name: 'Import Payments' });
+  const box = await element.boundingBox();
+  if (!box) return 'Element not found';
+
+  // Apply spotlight effect
+  await page.evaluate((rect) => {
+    // Dark overlay with cutout
+    const spotlight = document.createElement('div');
+    spotlight.setAttribute('data-doc-highlight', 'true');
+    spotlight.style.cssText = `
+      position: fixed;
+      left: ${rect.x - 8}px;
+      top: ${rect.y - 8}px;
+      width: ${rect.width + 16}px;
+      height: ${rect.height + 16}px;
+      border-radius: 8px;
+      z-index: 999999;
+      pointer-events: none;
+      box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.6);
+    `;
+
+    // White glow border
+    const glow = document.createElement('div');
+    glow.setAttribute('data-doc-highlight', 'true');
+    glow.style.cssText = `
+      position: fixed;
+      left: ${rect.x - 4}px;
+      top: ${rect.y - 4}px;
+      width: ${rect.width + 8}px;
+      height: ${rect.height + 8}px;
+      border-radius: 6px;
+      border: 3px solid rgba(255, 255, 255, 0.9);
+      z-index: 1000000;
+      pointer-events: none;
+      box-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+    `;
+
+    document.body.appendChild(spotlight);
+    document.body.appendChild(glow);
+  }, box);
+
+  return 'Spotlight applied';
+}
 ```
-📸 Capturing: Payroll page with Import button
-   Looking for: button containing "Import"
-   Found: "Import Payments" button
 
-   Saved: docs/flows/images/import-payments-trigger.png
+**Highlight utility reference:** See `{docs_root}/highlight-utils.js` for templates.
+
+### 6.6 Capture Screenshots
+
+For each step in the flow:
+1. Navigate to the appropriate page/state
+2. Decide: Is this an action step or informational?
+   - **Action step** → Apply spotlight highlight to the interactive element
+   - **Informational** → Take clean screenshot without highlights
+3. Take screenshot
+4. Clear any highlights before next screenshot
+
+**Screenshot 1: Overview (no highlight needed)**
+```
+📸 Capturing: Payroll page overview
+   Type: Informational - showing page context
+   Highlight: None
+
+   Saved: {docs_root}/flows/images/payroll-overview.png
+```
+
+**Screenshot 2: Action step (with highlight)**
+```
+📸 Capturing: Import button location
+   Type: Action - user needs to click this
+   Applying spotlight to: "Import Payments" button
+
+   Saved: {docs_root}/flows/images/import-payments-button.png
+```
+
+**IMPORTANT: Screenshot Output Directory**
+Always save screenshots to `{docs_root}/flows/images/` within the project, NOT to `.playwright-mcp/` or other temporary directories.
+
+Use the `filename` parameter with `browser_take_screenshot`:
+```javascript
+// Correct - saves to project docs folder
+{ filename: "{docs_root}/flows/images/screenshot-name.png" }
+
+// Wrong - saves to temporary playwright folder
+{ filename: ".playwright-mcp/{docs_root}/flows/images/screenshot-name.png" }
 ```
 
 **Screenshot 2: Modal/Form (if applicable)**
@@ -399,22 +604,37 @@ Capture relevant screenshots:
 📸 Capturing: Import modal/form
    Clicking: "Import Payments" button
    Waiting for: modal or form
+   Applying spotlight to: file upload field
 
-   Saved: docs/flows/images/import-payments-form.png
+   Saved: {docs_root}/flows/images/import-payments-form.png
 ```
 
-### 6.5 Screenshot Summary
+### 6.7 Clear Highlights Between Screenshots
+
+**IMPORTANT:** Always clear highlights before adding new ones:
+
+```javascript
+() => {
+  document.querySelectorAll('[data-doc-highlight]').forEach(el => el.remove());
+  return 'Cleared';
+}
+```
+
+### 6.8 Screenshot Summary
 
 ```
 📸 Screenshots captured:
 
-  1. import-payments-trigger.png
-     └── Payroll page showing "Import Payments" button
+  1. payroll-overview.png
+     └── Payroll page context (no highlight)
 
-  2. import-payments-form.png
-     └── Import modal with file upload field
+  2. import-payments-button.png
+     └── "Import Payments" button highlighted (action step)
 
-Screenshots saved to: docs/flows/images/
+  3. import-payments-form.png
+     └── File upload field highlighted (action step)
+
+Screenshots saved to: {docs_root}/flows/images/
 ```
 
 ---
@@ -464,7 +684,7 @@ Create the markdown file with all gathered information.
 
 ### 8.1 Create Output Directory
 
-Ensure `docs/flows/` and `docs/flows/images/` directories exist.
+Ensure `{docs_root}/flows/` and `{docs_root}/flows/images/` directories exist.
 
 ### 8.2 Generate Filename
 
@@ -648,7 +868,7 @@ public function handle(CsvPaymentImporter $importer)
 
 ### 8.4 Save File
 
-Write to `docs/flows/{kebab-case-title}.md`
+Write to `{docs_root}/flows/{kebab-case-title}.md`
 
 ---
 
@@ -659,7 +879,7 @@ Display final summary:
 ```
 ✅ Flow Documentation Complete
 
-📄 Output: docs/flows/import-payments-from-csv.md
+📄 Output: {docs_root}/flows/import-payments-from-csv.md
 
 📊 Analysis Summary:
    Files analyzed: 6

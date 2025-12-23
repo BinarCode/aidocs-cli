@@ -10,8 +10,51 @@ description: Execute the documentation plan and generate all docs with screensho
 **Your Role:** You are a documentation generator. You will systematically work through the plan, running explore and flow documentation for each module.
 
 **Requires:**
-- `docs/plan.yml` from `/docs:plan`
+- `{docs_root}/plan.yml` from `/docs:plan`
 - Playwright MCP for browser automation
+
+---
+
+## STEP 0: FIND AND LOAD CONFIGURATION
+
+**CRITICAL:** Before doing anything else, locate and load the configuration file.
+
+### 0.1 Search for Config File
+
+Search for `aidocs-config.yml` in this order:
+1. `docs/aidocs-config.yml` (default location)
+2. `./aidocs-config.yml` (project root)
+
+**Also check for old config format:**
+If `docs/config.yml` exists but `aidocs-config.yml` doesn't:
+```
+⚠️  Found old config format: docs/config.yml
+
+Please rename it to: docs/aidocs-config.yml
+Then run this command again.
+```
+
+### 0.2 If Config Found
+
+Load the config and extract:
+- `docs_root` → Base directory for all documentation (default: `docs`)
+- `urls.base` → Base URL for screenshots
+- `auth.method` → How to authenticate
+
+### 0.3 If Config NOT Found
+
+Display message and STOP:
+```
+⚠️  No aidocs-config.yml found.
+
+This workflow requires a configuration file to run.
+
+Would you like to create one now?
+1. Yes - run /docs:init to set up configuration
+2. No - I'll create docs/aidocs-config.yml manually
+```
+
+**IMPORTANT:** Do NOT proceed without config. Config is required.
 
 ---
 
@@ -39,7 +82,7 @@ Examples:
 ```
 📋 Loading documentation plan...
 
-✓ Plan found: docs/plan.yml
+✓ Plan found: {docs_root}/plan.yml
   Created: 2024-01-15 10:30:00
   Modules: 4
   Cross-module flows: 2
@@ -97,10 +140,10 @@ For each module in plan, verify knowledge exists:
 ```
 📁 Verifying knowledge base...
 
-✓ users         - docs/.knowledge/modules/users/
-✓ campaigns     - docs/.knowledge/modules/campaigns/
-✓ orders        - docs/.knowledge/modules/orders/
-✓ payments      - docs/.knowledge/modules/payments/
+✓ users         - {docs_root}/.knowledge/modules/users/
+✓ campaigns     - {docs_root}/.knowledge/modules/campaigns/
+✓ orders        - {docs_root}/.knowledge/modules/orders/
+✓ payments      - {docs_root}/.knowledge/modules/payments/
 
 All modules have discovery data.
 ```
