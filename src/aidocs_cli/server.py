@@ -15,7 +15,7 @@ class PythonName:
 
 def python_name_representer(dumper: yaml.Dumper, data: PythonName) -> yaml.Node:
     """Custom YAML representer for Python name references."""
-    return dumper.represent_scalar("!python/name:" + data.name, "", style="")
+    return dumper.represent_scalar("tag:yaml.org,2002:python/name:" + data.name, "")
 
 
 def discover_section(section_dir: Path, docs_root: Path) -> list:
