@@ -6,6 +6,18 @@ from typing import Optional
 import yaml
 
 
+class PythonName:
+    """Represents a Python name reference for YAML serialization."""
+
+    def __init__(self, name: str):
+        self.name = name
+
+
+def python_name_representer(dumper: yaml.Dumper, data: PythonName) -> yaml.Node:
+    """Custom YAML representer for Python name references."""
+    return dumper.represent_scalar("!python/name:" + data.name, "", style="")
+
+
 def discover_section(section_dir: Path, docs_root: Path) -> list:
     """Discover navigation items within a section directory."""
     items = []
@@ -135,7 +147,7 @@ def generate_mkdocs_config(
                         {
                             "name": "mermaid",
                             "class": "mermaid",
-                            "format": "!!python/name:pymdownx.superfences.fence_code_format",
+                            "format": PythonName("pymdownx.superfences.fence_code_format"),
                         }
                     ]
                 }
@@ -169,6 +181,7 @@ def generate_mkdocs_config(
 
 def write_mkdocs_config(config: dict, output_path: Path) -> None:
     """Write MkDocs configuration to a YAML file."""
+    yaml.add_representer(PythonName, python_name_representer)
     output_path.write_text(yaml.dump(config, default_flow_style=False, sort_keys=False))
 
 
