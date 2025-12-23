@@ -103,11 +103,11 @@ jobs:
           git push origin "v$NEW_VERSION"
 
           # Create release
-          gh release create "v$NEW_VERSION" \
-            --title "v$NEW_VERSION" \
-            --notes "## Changes
+          NOTES="## Changes
 
-$COMMIT_MSG
+          ${COMMIT_MSG}
 
----
-*Auto-generated release*"
+          ---
+          *Auto-generated release*"
+
+          gh release create "v$NEW_VERSION" --title "v$NEW_VERSION" --notes "$NOTES"
