@@ -5,9 +5,16 @@ description: Generate documentation for a web page using Playwright MCP for brow
 
 # Documentation Generator Workflow
 
-**Goal:** Generate comprehensive, user-focused documentation for a web page by navigating to it, capturing a screenshot, reading the codebase, and producing structured markdown.
+**Goal:** Generate comprehensive, user-focused documentation for a web page by first understanding the codebase, then navigating to capture screenshots with full context.
 
-**Your Role:** You are a documentation specialist. You will navigate to the page, understand what it does both visually and from the code, then generate clear documentation for end users.
+**Your Role:** You are a documentation specialist. You will FIRST analyze the codebase to understand what the page does, THEN navigate to capture screenshots knowing exactly what to look for.
+
+**CRITICAL - CODEBASE BEFORE UI:**
+Understanding the code FIRST ensures:
+- You know what fields/forms exist (even hidden/conditional ones)
+- You understand validation rules and can capture error states
+- You know relationships to other modules
+- Screenshots are comprehensive and accurate
 
 ---
 
@@ -255,7 +262,128 @@ If credentials are found (from any source):
 
 ---
 
-## STEP 3: NAVIGATE TO URL
+## STEP 3: ANALYZE CODEBASE FIRST
+
+**CRITICAL:** Before navigating to the UI, analyze the codebase to understand what you're documenting.
+
+### 3.1 Why Codebase First?
+
+Understanding the code BEFORE capturing screenshots ensures:
+- You know what fields/forms exist (even hidden/conditional ones)
+- You understand validation rules and error states to capture
+- You know relationships between modules
+- You can identify all UI states worth documenting
+- Screenshots are more accurate and complete
+
+### 3.2 Extract Resource from URL
+
+From the URL/module name, identify what to search for:
+- `/campaigns` → search for "campaigns", "Campaign"
+- `/users/settings` → search for "users", "settings", "UserSettings"
+
+### 3.3 Search for Backend Code
+
+Look for route definitions and controllers:
+
+```
+🔍 Analyzing codebase for: campaigns
+
+[1/4] Scanning routes...
+   ✓ Found: GET /campaigns (index)
+   ✓ Found: GET /campaigns/create (create form)
+   ✓ Found: POST /campaigns (store)
+   ✓ Found: GET /campaigns/{id} (show)
+   ✓ Found: GET /campaigns/{id}/edit (edit form)
+   ✓ Found: PUT /campaigns/{id} (update)
+   ✓ Found: DELETE /campaigns/{id} (destroy)
+
+[2/4] Scanning controllers...
+   ✓ Found: CampaignController
+   ✓ Methods: index, create, store, show, edit, update, destroy
+```
+
+### 3.4 Search for Frontend Components
+
+Look for UI components matching the resource:
+
+```
+[3/4] Scanning frontend components...
+   ✓ Found: resources/js/Pages/Campaigns/Index.vue
+   ✓ Found: resources/js/Pages/Campaigns/Create.vue
+   ✓ Found: resources/js/Pages/Campaigns/Edit.vue
+   ✓ Found: resources/js/Pages/Campaigns/Show.vue
+```
+
+### 3.5 Extract Form Fields and Validation
+
+From Request classes and frontend forms:
+
+```
+[4/4] Extracting form fields and validation...
+
+Create form fields:
+  • name (text, required, max:255)
+  • description (textarea, nullable)
+  • start_date (date, required, after:today)
+  • end_date (date, nullable, after:start_date)
+  • budget (number, required, min:0)
+  • status (select: draft|active|paused)
+
+Validation rules to capture:
+  • name required error
+  • start_date must be in future
+  • end_date must be after start_date
+```
+
+### 3.6 Identify Relationships
+
+Find related modules and navigation:
+
+```
+Relationships found:
+  • Campaign belongsTo User (creator)
+  • Campaign hasMany Orders
+  • Campaign hasMany Analytics
+
+Related pages to link:
+  • /users (creator)
+  • /orders (campaign orders)
+```
+
+### 3.7 Build Screenshot Plan
+
+Based on code analysis, plan what to capture:
+
+```
+📸 Screenshot Plan (from code analysis):
+
+1. List page (/campaigns)
+   - Table with: name, status, budget, dates columns
+   - Action buttons: Create, Edit, Delete
+
+2. Create form (/campaigns/create)
+   - 6 fields identified
+   - Capture empty state
+
+3. Validation states
+   - Required field errors
+   - Date validation errors
+
+4. Edit form (/campaigns/{id}/edit)
+   - Populated with data
+
+5. Delete confirmation
+   - Modal or confirmation dialog
+```
+
+**If codebase not found or no relevant code:**
+Log: "No codebase analysis available - will analyze visually"
+
+---
+
+## STEP 4: NAVIGATE TO URL
+
+Now navigate to the UI, knowing exactly what to look for from code analysis.
 
 Use Playwright MCP to:
 1. Launch browser (headless) - or reuse from auth step
@@ -269,26 +397,36 @@ Use Playwright MCP to:
 
 ---
 
-## STEP 4: CAPTURE AND ANALYZE PAGE
+## STEP 5: CAPTURE AND ANALYZE PAGE (with Context)
 
-1. **Extract module name** from URL (e.g., `/projects` → `projects`)
-2. **Capture full-page screenshot** using Playwright MCP
-3. **Save screenshot to file:**
-   - Create `{docs_root}/{module}/images/` directory if it doesn't exist
-   - Save as `{docs_root}/{module}/images/{module}.png`
-   - Store the relative path for markdown: `./images/{module}.png`
-4. **Extract page title** from the browser
-5. **Analyze the screenshot visually** - identify:
-   - Page purpose and layout
-   - Main sections (header, sidebar, main content, footer)
-   - Interactive elements (buttons, forms, links, tables)
-   - Data displays (metrics, cards, tables)
-   - Navigation options
+Using the knowledge from Step 3, capture comprehensive screenshots:
 
-Output your visual analysis in a structured format:
+### 5.1 Extract module name
+From URL (e.g., `/projects` → `projects`)
+
+### 5.2 Capture main screenshot
+Using Playwright MCP:
+- Create `{docs_root}/{module}/images/` directory if it doesn't exist
+- Save as `{docs_root}/{module}/images/{module}.png`
+- Store the relative path for markdown: `./images/{module}.png`
+
+### 5.3 Analyze page with codebase context
+
+Compare what you see against what the code told you:
+
 ```
+📊 Page Analysis (visual + code):
+
 Page Title: [extracted title]
 Page Purpose: [what this page is for]
+
+Expected from code    | Found in UI
+----------------------|------------------
+6 table columns       | ✓ All 6 visible
+Create button         | ✓ Found top-right
+Edit/Delete actions   | ✓ Found per row
+Status filter         | ✓ Found in header
+
 Main Sections: [list of identified sections]
 Key UI Elements: [buttons, forms, important interactive elements]
 Data Displayed: [tables, metrics, lists]
@@ -296,27 +434,25 @@ Navigation: [links to other pages]
 Screenshot saved: [path to saved screenshot]
 ```
 
----
+### 5.4 Capture additional states (from code analysis)
 
-## STEP 5: ANALYZE CODEBASE (if available)
+If code analysis identified important states:
 
-Search the codebase for code related to this page:
+```
+📸 Capturing additional states from code analysis:
 
-1. **Extract resource from URL** - e.g., `/campaigns` → "campaigns"
-2. **Search for frontend components:**
-   - Look for files matching the resource name (e.g., `Campaigns.vue`, `campaigns.tsx`, `CampaignsPage.jsx`)
-   - Identify event handlers (onClick, onSubmit, onChange)
-   - Find form validation logic
-   - Identify API calls
+[1/3] Create form (empty)
+   Navigating to /campaigns/create
+   📸 Saved: campaigns-create.png
 
-3. **Search for backend routes:**
-   - Look for route definitions matching the URL path
-   - Find controllers/handlers for this resource
-   - Extract validation rules
-   - Identify side effects (emails, notifications, database changes)
+[2/3] Validation errors
+   Submitting empty form
+   📸 Saved: campaigns-validation.png
 
-**If codebase not found or no relevant code:**
-Log: "No codebase analysis available - using visual analysis only"
+[3/3] Edit form (populated)
+   Navigating to /campaigns/1/edit
+   📸 Saved: campaigns-edit.png
+```
 
 **Merge findings:**
 - Code behavior takes precedence over visual assumptions
@@ -324,7 +460,7 @@ Log: "No codebase analysis available - using visual analysis only"
 
 ---
 
-## STEP 6: GENERATE DOCUMENTATION
+## STEP 6: GENERATE DOCUMENTATION (using Code + UI)
 
 Create a markdown file with the following structure:
 

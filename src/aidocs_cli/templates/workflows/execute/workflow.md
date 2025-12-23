@@ -150,7 +150,117 @@ All modules have discovery data.
 
 ---
 
-## STEP 3: DRY RUN (if --dry)
+## STEP 3: CODEBASE ANALYSIS (Before UI)
+
+**CRITICAL:** Before navigating to the UI, analyze the codebase to understand what you're documenting.
+
+### 3.1 Why Codebase First?
+
+Understanding the code BEFORE capturing screenshots ensures:
+- You know what fields/forms exist (even hidden/conditional ones)
+- You understand validation rules and error states to capture
+- You know the relationships between modules
+- You can identify all user flows worth documenting
+- Screenshots are more accurate and complete
+
+### 3.2 Analyze Each Module
+
+For each module in the plan:
+
+```
+🔍 Analyzing codebase for: users
+
+[1/4] Scanning controllers/routes...
+   ✓ Found: UserController (CRUD operations)
+   ✓ Routes: /users, /users/create, /users/{id}, /users/{id}/edit
+
+[2/4] Scanning frontend components...
+   ✓ Found: resources/js/Pages/Users/Index.vue
+   ✓ Found: resources/js/Pages/Users/Create.vue
+   ✓ Found: resources/js/Pages/Users/Edit.vue
+
+[3/4] Extracting form fields and validation...
+   ✓ Create form: name (required), email (required, unique), role (select)
+   ✓ Validation: email must be valid format, name max 255 chars
+
+[4/4] Identifying relationships...
+   ✓ User hasMany Orders
+   ✓ User belongsTo Team
+   ✓ Related modules: orders, teams
+```
+
+### 3.3 Build Knowledge Map
+
+For each module, create a knowledge map:
+
+```yaml
+# {docs_root}/.knowledge/modules/users/analysis.yml
+
+module: users
+routes:
+  - GET /users (index)
+  - GET /users/create (create form)
+  - POST /users (store)
+  - GET /users/{id} (show)
+  - GET /users/{id}/edit (edit form)
+  - PUT /users/{id} (update)
+  - DELETE /users/{id} (destroy)
+
+forms:
+  create:
+    fields:
+      - name: name
+        type: text
+        required: true
+        validation: "max:255"
+      - name: email
+        type: email
+        required: true
+        validation: "email|unique:users"
+      - name: role
+        type: select
+        options: [admin, user, viewer]
+
+  edit:
+    fields: [same as create, minus email unique]
+
+relationships:
+  - hasMany: orders
+  - belongsTo: team
+
+ui_states_to_capture:
+  - Empty state (no users)
+  - List with data
+  - Create form (empty)
+  - Create form (with validation errors)
+  - Edit form (populated)
+  - Delete confirmation modal
+```
+
+### 3.4 Progress Display
+
+```
+📊 Codebase Analysis Complete
+
+Module       | Routes | Forms | Fields | Relations
+-------------|--------|-------|--------|----------
+users        | 7      | 2     | 6      | 2
+campaigns    | 9      | 3     | 12     | 4
+orders       | 6      | 2     | 8      | 3
+payments     | 4      | 1     | 5      | 2
+
+Total knowledge gathered:
+  • 26 routes mapped
+  • 8 forms identified
+  • 31 fields with validation rules
+  • 11 module relationships
+
+Ready to capture UI with full context.
+```
+
+---
+
+## STEP 4: DRY RUN (if --dry)
 
 If `--dry` flag provided:
 
@@ -194,11 +304,11 @@ Continue with actual execution? [Y/n]
 
 ---
 
-## STEP 4: EXECUTE MODULE DOCUMENTATION
+## STEP 5: EXECUTE MODULE DOCUMENTATION
 
 For each module in priority order:
 
-### 4.1 Start Module
+### 5.1 Start Module
 
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -212,58 +322,96 @@ Output: docs/users/
 Starting documentation...
 ```
 
-### 4.2 Run Explore (if UI not explored)
+### 5.2 Load Codebase Knowledge
 
-Check if UI exploration exists:
+**CRITICAL:** Before touching the UI, load the analysis from Step 3:
 
 ```
-🖱️ Exploring UI...
+📚 Loading codebase knowledge for: users
 
-  Navigating to /users
-  📸 Capturing list page...
+From analysis.yml:
+  • Routes: 7 endpoints mapped
+  • Forms: create (6 fields), edit (5 fields)
+  • Validation rules: 8 rules to test
+  • Relationships: orders, teams
+  • UI states to capture: 6 states identified
 
-  Navigating to /users/create
-  📸 Capturing create form...
-  🔍 Testing conditional fields...
-  ⚠️  Testing validation...
+This knowledge guides what we capture in the UI.
+```
 
-  ✓ UI exploration complete
+### 5.3 Navigate UI with Context
+
+Now navigate the UI, knowing exactly what to look for:
+
+```
+🖱️ Exploring UI with codebase context...
+
+  [1/6] Navigating to /users (list page)
+        Looking for: table with name, email, role columns (from code)
+        📸 Capturing list page...
+        ✓ Found expected columns
+
+  [2/6] Navigating to /users/create
+        Looking for: 6 form fields (from code analysis)
+        📸 Capturing empty form...
+
+  [3/6] Testing validation (from validation rules)
+        Triggering: email format validation
+        📸 Capturing validation error state...
+        Triggering: required field validation
+        📸 Capturing required field errors...
+
+  [4/6] Testing conditional fields
+        Found in code: role field shows extra options for admin
+        📸 Capturing conditional state...
+
+  [5/6] Navigating to /users/{id}/edit
+        📸 Capturing populated edit form...
+
+  [6/6] Testing delete flow
+        Found in code: soft delete with confirmation
+        📸 Capturing delete confirmation modal...
+
+  ✓ UI exploration complete (guided by codebase)
     Pages explored: 4
-    Screenshots: 8
-    Validation messages: 5
+    Screenshots: 12 (all planned states captured)
+    Validation states: 3 (all known rules tested)
     Conditional triggers: 2
 ```
 
-### 4.3 Generate Lifecycle Documentation
+### 5.4 Generate Lifecycle Documentation
+
+Using codebase knowledge + UI screenshots:
 
 ```
 📚 Generating lifecycle documentation...
 
-  ✓ Overview section
+  ✓ Overview section (from code analysis)
+  ✓ Field reference table (from form analysis)
   ✓ Create flow (4 steps, 4 screenshots)
   ✓ View flow (2 steps, 2 screenshots)
   ✓ Edit flow (3 steps, 3 screenshots)
   ✓ Delete flow (2 steps, 2 screenshots)
-  ✓ Error states (3 scenarios)
-  ✓ Field reference table
+  ✓ Validation rules (from code + tested in UI)
+  ✓ Error states (3 scenarios - all from code)
 
   Written: docs/users/lifecycle.md
 ```
 
-### 4.4 Generate Module Index
+### 5.5 Generate Module Index
 
 ```
 📄 Generating module index...
 
   ✓ Module overview
-  ✓ Features list
+  ✓ Features list (from code capabilities)
   ✓ Navigation links
-  ✓ Related modules
+  ✓ Related modules (from relationships analysis)
 
   Written: docs/users/index.md
 ```
 
-### 4.5 Generate Custom Flows (if any)
+### 5.6 Generate Custom Flows (if any)
 
 If module has custom flows defined:
 
@@ -279,7 +427,7 @@ If module has custom flows defined:
     Written: docs/campaigns/archive-campaign.md
 ```
 
-### 4.6 Update Plan Status
+### 5.7 Update Plan Status
 
 ```
 ✓ Module complete: users
@@ -292,7 +440,7 @@ Progress: 1/4 modules complete
 
 ---
 
-## STEP 5: PROGRESS DISPLAY
+## STEP 6: PROGRESS DISPLAY
 
 Show ongoing progress:
 
@@ -321,7 +469,7 @@ Time elapsed: 4m 23s
 
 ---
 
-## STEP 6: CROSS-MODULE FLOWS
+## STEP 7: CROSS-MODULE FLOWS
 
 After all modules complete, document cross-module flows:
 
@@ -362,7 +510,7 @@ After all modules complete, document cross-module flows:
 
 ---
 
-## STEP 7: GENERATE MAIN INDEX
+## STEP 8: GENERATE MAIN INDEX
 
 Create/update the main documentation index:
 
@@ -396,7 +544,7 @@ docs/index.md:
 
 ---
 
-## STEP 8: UPDATE PLAN STATUS
+## STEP 9: UPDATE PLAN STATUS
 
 Mark plan as complete:
 
@@ -435,7 +583,7 @@ cross_module_flows:
 
 ---
 
-## STEP 9: COMPLETION SUMMARY
+## STEP 10: COMPLETION SUMMARY
 
 ```
 ✅ Documentation Generation Complete

@@ -8,10 +8,17 @@ description: Document a code flow with screenshots, diagrams, and user-friendly 
 **Goal:** Create user-friendly documentation that explains how a feature works, with screenshots and clear step-by-step instructions.
 
 **Your Role:** You are a documentation specialist creating guides for END USERS, not developers. Focus on:
-- **Screenshots first** - Visual documentation is most important
+- **Codebase first** - Understand the implementation before capturing UI
+- **Screenshots with context** - Know what to capture from code analysis
 - **Plain English** - Avoid technical jargon
 - **Step-by-step instructions** - What the user clicks/sees
-- **Minimal code** - Only show code if absolutely necessary
+
+**CRITICAL - CODEBASE BEFORE UI:**
+Understanding the code FIRST ensures:
+- You know what forms/fields exist (even hidden/conditional ones)
+- You understand validation rules and can capture error states
+- You know the complete flow path from code, not just visible UI
+- Screenshots are comprehensive and accurate
 
 **IMPORTANT - Screenshots are REQUIRED:**
 - You MUST use Playwright MCP to capture screenshots
@@ -410,6 +417,36 @@ Or run with --no-screenshots flag (not recommended).
 ```
 
 **DO NOT CONTINUE without screenshots unless --no-screenshots was explicitly provided.**
+
+### 6.1b Use Codebase Knowledge to Plan Screenshots
+
+**CRITICAL:** Before capturing any screenshots, use the knowledge gathered from Steps 1-5:
+
+From your codebase analysis, you now know:
+- **Entry points** → Which URLs/pages to navigate to
+- **Form fields** → What inputs to show and fill
+- **Validation rules** → What error states to trigger and capture
+- **Flow steps** → The exact sequence of pages/actions
+- **Conditional logic** → Hidden fields or states to reveal
+
+```
+📸 Planning screenshots based on code analysis:
+
+From code analysis:
+  • Entry point: PayrollController@import (POST /payroll/import)
+  • UI page: /payroll
+  • Form fields: csv (file upload)
+  • Validation: file required, mimes:csv,txt, max:10240
+
+Screenshots to capture:
+  1. Payroll page with "Import" button visible
+  2. Import modal/form (empty state)
+  3. Form with file selected
+  4. Validation error (wrong file type)
+  5. Success state after import
+
+This ensures we capture ALL relevant states, not just what's visible.
+```
 
 ### 6.2 Authenticate (if needed)
 
