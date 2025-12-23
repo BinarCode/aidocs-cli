@@ -44,18 +44,16 @@ jobs:
           VERSION="${{ steps.version.outputs.version }}"
           COMMIT_MSG=$(git log -1 --pretty=%B | head -1)
 
-          # Create tag
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
           git tag -a "v$VERSION" -m "Release v$VERSION"
           git push origin "v$VERSION"
 
-          # Create release
-          gh release create "v$VERSION" \
-            --title "v$VERSION" \
-            --notes "## Changes
+          cat <<EOF | gh release create "v$VERSION" --title "v$VERSION" --notes-file -
+          ## Changes
 
-${COMMIT_MSG}
+          $COMMIT_MSG
 
----
-*Auto-generated release*"
+          ---
+          *Auto-generated release*
+          EOF
