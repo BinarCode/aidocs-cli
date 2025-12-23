@@ -1,33 +1,26 @@
 name: Update Homebrew Formula
 
 on:
-  workflow_run:
-    workflows: ["Publish to PyPI"]
-    types: [completed]
+  release:
+    types: [published]
 
 jobs:
   update-formula:
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     steps:
-      - name: Get version from PyPI
-        id: pypi
+      - name: Get release info
+        id: release
         run: |
-          # Wait a bit for PyPI to propagate
-          sleep 10
-
-          # Get latest version and SHA256 from PyPI
-          PYPI_JSON=$(curl -s "https://pypi.org/pypi/aidocs/json")
-          VERSION=$(echo "$PYPI_JSON" | jq -r '.info.version')
-          SDIST_URL=$(echo "$PYPI_JSON" | jq -r '.urls[] | select(.packagetype == "sdist") | .url')
-          SHA256=$(echo "$PYPI_JSON" | jq -r '.urls[] | select(.packagetype == "sdist") | .digests.sha256')
+          VERSION="${GITHUB_REF_NAME#v}"
+          URL="https://github.com/${{ github.repository }}/archive/refs/tags/${{ github.ref_name }}.tar.gz"
+          SHA256=$(curl -sL "$URL" | shasum -a 256 | cut -d' ' -f1)
 
           echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "url=$SDIST_URL" >> $GITHUB_OUTPUT
+          echo "url=$URL" >> $GITHUB_OUTPUT
           echo "sha256=$SHA256" >> $GITHUB_OUTPUT
 
-          echo "Found version: $VERSION"
-          echo "URL: $SDIST_URL"
+          echo "Version: $VERSION"
+          echo "URL: $URL"
           echo "SHA256: $SHA256"
 
       - name: Checkout homebrew-aidocs
@@ -39,22 +32,21 @@ jobs:
 
       - name: Update formula
         run: |
-          cd homebrew-aidocs
-          cat > Formula/aidocs.rb << EOF
+          cat > homebrew-aidocs/Formula/aidocs.rb << EOF
           class Aidocs < Formula
             include Language::Python::Virtualenv
 
             desc "AI-powered documentation generator CLI for Claude Code"
             homepage "https://github.com/binarcode/aidocs-cli"
-            url "${{ steps.pypi.outputs.url }}"
-            sha256 "${{ steps.pypi.outputs.sha256 }}"
+            url "${{ steps.release.outputs.url }}"
+            sha256 "${{ steps.release.outputs.sha256 }}"
             license "MIT"
 
             depends_on "python@3.11"
 
             def install
               venv = virtualenv_create(libexec, "python3.11")
-              venv.pip_install "aidocs==${{ steps.pypi.outputs.version }}"
+              venv.pip_install "aidocs==${{ steps.release.outputs.version }}"
               bin.install_symlink libexec/"bin/aidocs"
             end
 
@@ -70,5 +62,5 @@ jobs:
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
           git add Formula/aidocs.rb
-          git diff --staged --quiet || git commit -m "Update aidocs to ${{ steps.pypi.outputs.version }}"
+          git diff --staged --quiet || git commit -m "Update aidocs to ${{ steps.release.outputs.version }}"
           git push
