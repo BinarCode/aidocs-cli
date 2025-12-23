@@ -1,0 +1,65 @@
+name: Update Homebrew Formula
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  update-formula:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Extract version from tag
+        id: version
+        run: echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: Get release tarball SHA256
+        id: sha256
+        run: |
+          SHA256=$(curl -sL "https://github.com/${{ github.repository }}/archive/refs/tags/${{ github.ref_name }}.tar.gz" | shasum -a 256 | cut -d' ' -f1)
+          echo "sha256=$SHA256" >> $GITHUB_OUTPUT
+
+      - name: Checkout homebrew-aidocs
+        uses: actions/checkout@v4
+        with:
+          repository: binarcode/homebrew-aidocs
+          token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          path: homebrew-aidocs
+
+      - name: Update formula
+        run: |
+          cd homebrew-aidocs
+          cat > Formula/aidocs.rb << 'EOF'
+          class Aidocs < Formula
+            desc "AI-powered documentation generator CLI for Claude Code"
+            homepage "https://github.com/binarcode/aidocs-cli"
+            url "https://github.com/binarcode/aidocs-cli/archive/refs/tags/${{ github.ref_name }}.tar.gz"
+            sha256 "${{ steps.sha256.outputs.sha256 }}"
+            license "MIT"
+            head "https://github.com/binarcode/aidocs-cli.git", branch: "main"
+
+            depends_on "python@3.11"
+
+            def install
+              python3 = "python3.11"
+              venv = virtualenv_create(libexec, python3)
+
+              system libexec/"bin/pip", "install", ".", "--no-deps"
+              system libexec/"bin/pip", "install", "typer>=0.9.0", "rich>=13.0.0", "httpx>=0.27.0"
+
+              bin.install_symlink libexec/"bin/aidocs"
+            end
+
+            test do
+              assert_match version.to_s, shell_output("#{bin}/aidocs version")
+            end
+          end
+          EOF
+
+      - name: Commit and push
+        run: |
+          cd homebrew-aidocs
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add Formula/aidocs.rb
+          git commit -m "Update aidocs to ${{ steps.version.outputs.version }}"
+          git push

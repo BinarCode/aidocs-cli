@@ -299,6 +299,35 @@ COMMIT;
 psql $DATABASE_URL -f docs/.chunks/sync.sql
 ```
 
+### `aidocs serve`
+
+Serve documentation with live reload using MkDocs Material theme.
+
+```bash
+aidocs serve                    # Serve docs/ on port 8000
+aidocs serve --port 3000        # Custom port
+aidocs serve docs/users         # Serve specific subdirectory
+aidocs serve --build            # Build static site only
+aidocs serve --build -o ./site  # Build to custom output
+aidocs serve --no-open          # Don't auto-open browser
+```
+
+**Options:**
+| Option | Description |
+|--------|-------------|
+| `--port, -p` | Port to serve on (default: 8000) |
+| `--host` | Host to bind to (default: 127.0.0.1) |
+| `--open/--no-open` | Open browser automatically (default: --open) |
+| `--build, -b` | Build static site only, no server |
+| `--output, -o` | Output directory for built site |
+
+**Features:**
+- Auto-generates navigation from folder structure
+- Material Design theme with light/dark mode
+- Live reload when files change
+- Full-text search
+- Code syntax highlighting
+
 ## Slash Commands
 
 After running `aidocs init`, these commands are available in Claude Code:

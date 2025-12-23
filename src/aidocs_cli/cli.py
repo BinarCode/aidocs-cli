@@ -14,6 +14,7 @@ from . import __version__
 from .chunker import chunk_directory
 from .embeddings import generate_sync_sql, get_openai_api_key
 from .installer import check_tools, install_docs_module
+from .server import generate_mkdocs_config, validate_docs_directory, write_mkdocs_config
 
 console = Console()
 
@@ -433,6 +434,140 @@ def rag_vectors(
     except Exception as e:
         console.print(f"[red]Error: {e}[/red]")
         raise typer.Exit(1)
+
+
+@app.command()
+def serve(
+    docs_dir: Optional[str] = typer.Argument(
+        "docs",
+        help="Directory containing markdown documentation.",
+    ),
+    port: int = typer.Option(
+        8000,
+        "--port",
+        "-p",
+        help="Port to serve documentation on.",
+    ),
+    host: str = typer.Option(
+        "127.0.0.1",
+        "--host",
+        help="Host to bind to.",
+    ),
+    open_browser: bool = typer.Option(
+        True,
+        "--open/--no-open",
+        help="Open browser automatically.",
+    ),
+    build_only: bool = typer.Option(
+        False,
+        "--build",
+        "-b",
+        help="Build static site only (no server).",
+    ),
+    output_dir: Optional[str] = typer.Option(
+        None,
+        "--output",
+        "-o",
+        help="Output directory for built site (default: docs/_site).",
+    ),
+) -> None:
+    """Serve documentation with live reload using MkDocs Material.
+
+    Examples:
+        aidocs serve                    # Serve docs/ on port 8000
+        aidocs serve --port 3000        # Custom port
+        aidocs serve docs/users         # Serve specific subdirectory
+        aidocs serve --build            # Build static site only
+        aidocs serve --build -o ./site  # Build to custom output
+    """
+    import tempfile
+    import threading
+    import webbrowser
+
+    target_dir = Path(docs_dir)
+
+    is_valid, error_msg = validate_docs_directory(target_dir)
+    if not is_valid:
+        console.print(Panel.fit(
+            f"[red]{error_msg}[/red]",
+            title="Error",
+            border_style="red",
+        ))
+        raise typer.Exit(1)
+
+    site_output = Path(output_dir) if output_dir else target_dir / "_site"
+
+    console.print("[blue]Discovering documentation structure...[/blue]")
+    mkdocs_config = generate_mkdocs_config(
+        target_dir,
+        output_dir=site_output if build_only else None,
+    )
+
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        config_path = Path(tmp_dir) / "mkdocs.yml"
+        write_mkdocs_config(mkdocs_config, config_path)
+
+        if build_only:
+            console.print(f"[blue]Building static site to {site_output}...[/blue]")
+
+            try:
+                result = subprocess.run(
+                    ["mkdocs", "build", "-f", str(config_path)],
+                    capture_output=True,
+                    text=True,
+                )
+
+                if result.returncode == 0:
+                    console.print()
+                    console.print(Panel.fit(
+                        f"[green]Site built successfully![/green]\n\n"
+                        f"Output: {site_output}\n\n"
+                        "[dim]Deploy with any static hosting service.[/dim]",
+                        title="Build Complete",
+                        border_style="green",
+                    ))
+                else:
+                    console.print("[red]Build failed:[/red]")
+                    if result.stderr:
+                        console.print(result.stderr)
+                    raise typer.Exit(1)
+
+            except FileNotFoundError:
+                console.print("[red]Error: mkdocs not found. Install with: pip install mkdocs mkdocs-material[/red]")
+                raise typer.Exit(1)
+        else:
+            url = f"http://{host}:{port}"
+            console.print()
+            console.print(Panel.fit(
+                f"[green]Starting documentation server...[/green]\n\n"
+                f"URL: [cyan]{url}[/cyan]\n"
+                f"Docs: {target_dir}\n\n"
+                "[dim]Press Ctrl+C to stop[/dim]",
+                title="MkDocs Server",
+                border_style="green",
+            ))
+
+            try:
+                cmd = [
+                    "mkdocs", "serve",
+                    "-f", str(config_path),
+                    "-a", f"{host}:{port}",
+                ]
+
+                if open_browser:
+                    def open_after_delay() -> None:
+                        import time
+                        time.sleep(1.5)
+                        webbrowser.open(url)
+                    threading.Thread(target=open_after_delay, daemon=True).start()
+
+                subprocess.run(cmd)
+
+            except FileNotFoundError:
+                console.print("[red]Error: mkdocs not found. Install with: pip install mkdocs mkdocs-material[/red]")
+                raise typer.Exit(1)
+            except KeyboardInterrupt:
+                console.print("\n[yellow]Server stopped.[/yellow]")
 
 
 if __name__ == "__main__":

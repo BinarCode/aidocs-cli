@@ -5,7 +5,20 @@
       "Bash(git commit:*)",
       "Bash(git push)",
       "Bash(git pull:*)",
-      "Bash(git fetch:*)"
+      "Bash(git fetch:*)",
+      "Bash(tree:*)",
+      "Bash(curl:*)",
+      "Bash(python3:*)",
+      "Bash(pip3 show:*)",
+      "Bash(paste:*)",
+      "Bash(wc:*)",
+      "Bash(cat:*)",
+      "Bash(shasum:*)",
+      "Bash(brew tap:*)",
+      "Bash(brew install:*)",
+      "Bash(brew untap:*)",
+      "Bash(aidocs version:*)",
+      "Bash(uv pip install:*)"
     ]
   }
 }
