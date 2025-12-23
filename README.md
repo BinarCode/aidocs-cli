@@ -35,7 +35,7 @@ This produces documentation that's accurate to both the code AND the actual user
 
 ```bash
 # 1. Install the CLI
-uv tool install aidocs
+brew install binarcode/aidocs/aidocs
 
 # 2. Add to your project
 cd your-project
@@ -47,17 +47,24 @@ aidocs init .
 
 **Alternative installation:**
 ```bash
+# Homebrew (macOS/Linux)
+brew install binarcode/aidocs/aidocs
+
+# uv (recommended for Python users)
+uv tool install aidocs
+
+# pipx
+pipx install aidocs
+
 # From GitHub (latest)
 uv tool install aidocs --from git+https://github.com/binarcode/aidocs-cli.git
-
-# Or use pipx
-pipx install aidocs
 ```
 
 **Updating:**
 ```bash
-aidocs update                  # Update from PyPI
-aidocs update --github         # Update from GitHub (latest)
+brew upgrade aidocs            # Homebrew
+aidocs update                  # PyPI (uv/pipx/pip)
+aidocs update --github         # GitHub (latest)
 aidocs init . --force          # Reinstall commands in project
 ```
 
