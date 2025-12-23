@@ -612,7 +612,8 @@ def serve(
                     sys.executable, "-m", "mkdocs", "serve",
                     "-f", str(config_path),
                     "-a", f"{host}:{port}",
-                    "--watch", str(target_dir),
+                    "--watch", str(target_dir.resolve()),
+                    "--livereload",
                 ]
 
                 if open_browser:
