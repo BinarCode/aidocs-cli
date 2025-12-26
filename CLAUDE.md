@@ -25,6 +25,9 @@ aidocs rag-vectors        # Generate embeddings (requires OPENAI_API_KEY)
 aidocs serve              # Serve docs with MkDocs Material
 aidocs serve --build      # Build static site
 
+# MCP server (expose docs to Claude Code)
+aidocs mcp docs/          # Start MCP server for docs directory
+
 # PDF export
 aidocs export-pdf docs/page.md
 ```
@@ -40,6 +43,7 @@ src/aidocs_cli/
 ├── embeddings.py     # OpenAI embeddings + SQL generation for pgvector
 ├── server.py         # MkDocs config generation and nav discovery
 ├── pdf_exporter.py   # Markdown→HTML→PDF with Chrome/Playwright
+├── mcp_server.py     # MCP server exposing docs via tools (list, search, read)
 └── templates/
     ├── commands/docs/    # Slash command definitions (*.md)
     └── workflows/        # Workflow implementations per command
@@ -74,7 +78,7 @@ Version is defined in two places (keep in sync):
 
 ## Dependencies
 
-Core: typer, rich, httpx, mkdocs, mkdocs-material, pyyaml
+Core: typer, rich, httpx, mkdocs, mkdocs-material, pyyaml, mcp
 
 Python 3.11+ required. Build system uses hatchling.
 

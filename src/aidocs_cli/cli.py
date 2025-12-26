@@ -437,6 +437,176 @@ def rag_vectors(
         raise typer.Exit(1)
 
 
+@app.command("rag")
+def rag(
+    docs_dir: Optional[str] = typer.Argument(
+        "docs",
+        help="Directory containing documentation.",
+    ),
+    force: bool = typer.Option(
+        False,
+        "--force",
+        "-f",
+        help="Re-chunk and re-sync all files.",
+    ),
+    dry: bool = typer.Option(
+        False,
+        "--dry",
+        help="Preview what would happen without making changes.",
+    ),
+    table: str = typer.Option(
+        "doc_embeddings",
+        "--table",
+        "-t",
+        help="Target table name in PostgreSQL.",
+    ),
+    skip_vectors: bool = typer.Option(
+        False,
+        "--skip-vectors",
+        help="Only chunk files, skip embedding generation.",
+    ),
+) -> None:
+    """Prepare documentation for RAG: chunk and generate embeddings.
+
+    Combines rag-chunks and rag-vectors into a single command.
+    Perfect for preparing docs before starting the MCP server.
+
+    Examples:
+        aidocs rag                      # Chunk and generate embeddings
+        aidocs rag --dry                # Preview only
+        aidocs rag --force              # Re-process everything
+        aidocs rag --skip-vectors       # Only chunk, no embeddings
+    """
+    target_dir = Path(docs_dir)
+
+    if not target_dir.exists():
+        console.print(f"[red]Error: Directory not found: {docs_dir}[/red]")
+        raise typer.Exit(1)
+
+    mode = "[yellow]DRY RUN[/yellow] - " if dry else ""
+
+    # Step 1: Chunk files
+    console.print(f"{mode}[blue]Step 1/2: Chunking markdown files...[/blue]")
+    console.print()
+
+    try:
+        stats = chunk_directory(target_dir, force=force, dry=dry)
+
+        if dry:
+            for f in stats["files"]:
+                status_icon = {"new": "+", "updated": "~", "unchanged": " "}
+                icon = status_icon.get(f["status"], "?")
+                console.print(f"  [{icon}] {f['path']} ({f['chunks']} chunks)")
+            console.print()
+            console.print(f"  [dim]Would process: {stats['processed']} files[/dim]")
+            console.print(f"  [dim]Would skip: {stats['skipped']} unchanged files[/dim]")
+        else:
+            console.print(f"  [green]Processed:[/green] {stats['processed']} files")
+            console.print(f"  [dim]Skipped:[/dim] {stats['skipped']} unchanged files")
+            console.print(f"  [green]Created:[/green] {stats['chunks_created']} chunks")
+
+        console.print()
+
+    except Exception as e:
+        console.print(f"[red]Error chunking: {e}[/red]")
+        raise typer.Exit(1)
+
+    # Step 2: Generate embeddings (unless skipped)
+    if skip_vectors:
+        console.print(f"[dim]Step 2/2: Skipped (--skip-vectors)[/dim]")
+        console.print()
+        console.print(Panel.fit(
+            f"[green]Chunking complete![/green]\n\n"
+            f"Chunks created: {stats['chunks_created']}\n\n"
+            f"[dim]Run [cyan]aidocs rag-vectors[/cyan] to generate embeddings.[/dim]\n"
+            f"[dim]Or run [cyan]aidocs mcp {docs_dir}[/cyan] to start MCP server.[/dim]",
+            title="Success",
+            border_style="green",
+        ))
+        return
+
+    # Check for API key
+    if not dry and not get_openai_api_key():
+        console.print(Panel.fit(
+            "[yellow]Chunking complete, but OPENAI_API_KEY not set[/yellow]\n\n"
+            f"Chunks created: {stats['chunks_created']}\n\n"
+            "To generate embeddings, set the environment variable:\n"
+            "  [cyan]export OPENAI_API_KEY=sk-...[/cyan]\n\n"
+            f"Or start MCP server without embeddings:\n"
+            f"  [cyan]aidocs mcp {docs_dir}[/cyan]",
+            title="Partial Success",
+            border_style="yellow",
+        ))
+        return
+
+    console.print(f"{mode}[blue]Step 2/2: Generating embeddings...[/blue]")
+    console.print()
+
+    def on_progress(current: int, total: int, message: str) -> None:
+        console.print(f"  [{current + 1}/{total}] {message}")
+
+    def on_status(message: str) -> None:
+        console.print(f"  [dim]{message}[/dim]")
+
+    try:
+        result = generate_sync_sql(
+            target_dir,
+            force=force,
+            dry=dry,
+            table_name=table,
+            on_progress=on_progress if not dry else None,
+            on_status=on_status,
+        )
+
+        if not result["success"]:
+            console.print(f"[red]Error: {result.get('error', 'Unknown error')}[/red]")
+            raise typer.Exit(1)
+
+        vec_stats = result["stats"]
+        console.print()
+
+        if dry:
+            console.print(Panel.fit(
+                f"[yellow]DRY RUN - Preview only[/yellow]\n\n"
+                f"Chunks: {stats['chunks_created']} (from {stats['processed']} files)\n"
+                f"Embeddings to generate: {vec_stats.get('total_chunks', 0)}\n"
+                f"Estimated cost: ${vec_stats.get('estimated_cost', 0):.4f}\n\n"
+                f"[dim]Run without --dry to execute.[/dim]",
+                title="Preview",
+                border_style="yellow",
+            ))
+        elif result.get("message"):
+            console.print(Panel.fit(
+                f"[green]RAG preparation complete![/green]\n\n"
+                f"Chunks: {stats['chunks_created']}\n"
+                f"Embeddings: up to date\n\n"
+                f"[dim]Start MCP server:[/dim]\n"
+                f"  [cyan]aidocs mcp {docs_dir}[/cyan]",
+                title="Success",
+                border_style="green",
+            ))
+        else:
+            sql_file = result.get("sql_file", f"{docs_dir}/.chunks/sync.sql")
+            console.print(Panel.fit(
+                f"[green]RAG preparation complete![/green]\n\n"
+                f"Chunks: {stats['chunks_created']}\n"
+                f"Embeddings: {vec_stats.get('embeddings_generated', 0)}\n"
+                f"SQL file: {sql_file}\n\n"
+                f"[dim]Import to database:[/dim]\n"
+                f"  [cyan]psql $DATABASE_URL -f {sql_file}[/cyan]\n\n"
+                f"[dim]Or start MCP server:[/dim]\n"
+                f"  [cyan]aidocs mcp {docs_dir}[/cyan]",
+                title="Success",
+                border_style="green",
+            ))
+
+    except typer.Exit:
+        raise
+    except Exception as e:
+        console.print(f"[red]Error generating embeddings: {e}[/red]")
+        raise typer.Exit(1)
+
+
 @app.command("export-pdf")
 def export_pdf(
     markdown_file: str = typer.Argument(
@@ -630,6 +800,47 @@ def serve(
                 raise typer.Exit(1)
             except KeyboardInterrupt:
                 console.print("\n[yellow]Server stopped.[/yellow]")
+
+
+@app.command("mcp")
+def mcp_command(
+    docs_dir: str = typer.Argument(
+        "docs",
+        help="Documentation directory to serve",
+    ),
+) -> None:
+    """Start MCP server to expose documentation via tools.
+
+    Exposes documentation through MCP tools:
+    - list_docs: List all documentation files
+    - search_docs: Search through documentation by keyword
+    - read_doc: Read full content of a file or chunk
+    - get_doc_structure: Get heading hierarchy
+
+    Example usage in .mcp.json:
+        {
+          "mcpServers": {
+            "aidocs": {
+              "command": "aidocs",
+              "args": ["mcp", "docs/"]
+            }
+          }
+        }
+    """
+    import asyncio
+
+    from .mcp_server import run_server
+
+    target_dir = Path(docs_dir)
+    if not target_dir.exists():
+        console.print(f"[red]Error: Directory not found: {docs_dir}[/red]")
+        raise typer.Exit(1)
+
+    if not target_dir.is_dir():
+        console.print(f"[red]Error: Not a directory: {docs_dir}[/red]")
+        raise typer.Exit(1)
+
+    asyncio.run(run_server(target_dir))
 
 
 if __name__ == "__main__":

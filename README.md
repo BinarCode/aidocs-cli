@@ -221,6 +221,44 @@ aidocs update --github     # Update from GitHub (latest)
 
 Automatically detects and uses the appropriate package manager (uv, pipx, or pip).
 
+### `aidocs rag`
+
+Prepare documentation for RAG: chunk files and generate embeddings in one command.
+
+```bash
+aidocs rag                      # Chunk and generate embeddings
+aidocs rag docs/users           # Specific directory
+aidocs rag --dry                # Preview only
+aidocs rag --force              # Re-process everything
+aidocs rag --skip-vectors       # Only chunk, no embeddings
+```
+
+**Options:**
+| Option | Description |
+|--------|-------------|
+| `--force, -f` | Re-chunk and re-sync all files |
+| `--dry` | Preview without making changes |
+| `--table, -t` | Target table name (default: `doc_embeddings`) |
+| `--skip-vectors` | Only chunk files, skip embedding generation |
+
+**What it does:**
+1. Chunks markdown files at `##` headings (creates `.chunks.json` files)
+2. Generates embeddings via OpenAI API (requires `OPENAI_API_KEY`)
+3. Creates `docs/.chunks/sync.sql` for database import
+
+**Workflow:**
+```bash
+# Prepare docs for MCP server
+aidocs rag docs/
+
+# Start MCP server
+aidocs mcp docs/
+```
+
+**Note:** If `OPENAI_API_KEY` is not set, chunking completes but embeddings are skipped. The MCP server works with just chunks (keyword search).
+
+**Environment:** Reads `OPENAI_API_KEY` from `.env` file in current directory or global environment.
+
 ### `aidocs rag-chunks`
 
 Chunk markdown files for vector database import.
@@ -314,7 +352,7 @@ aidocs rag-vectors --table my_docs  # Custom table name
 | `--dry` | Preview without generating embeddings |
 | `--table, -t` | Target table name (default: `doc_embeddings`) |
 
-**Requires:** `OPENAI_API_KEY` environment variable
+**Requires:** `OPENAI_API_KEY` (from `.env` file or environment variable)
 
 **What it does:**
 1. Reads chunk files from `docs/.chunks/`
@@ -367,6 +405,89 @@ aidocs serve --no-open          # Don't auto-open browser
 - Live reload when files change
 - Full-text search
 - Code syntax highlighting
+
+### `aidocs mcp`
+
+Start a local MCP server to expose documentation via tools. Allows Claude Code and other MCP clients to search and read your docs.
+
+```bash
+aidocs mcp                      # Serve docs/ directory
+aidocs mcp docs/users           # Serve specific subdirectory
+```
+
+**MCP Tools exposed:**
+
+| Tool | Description |
+|------|-------------|
+| `list_docs` | List all documentation files with chunk counts |
+| `search_docs` | Search through documentation by keyword |
+| `read_doc` | Read full content of a file or specific chunk |
+| `get_doc_structure` | Get heading hierarchy for navigation |
+
+**Configuration (`.mcp.json`):**
+
+```json
+{
+  "mcpServers": {
+    "aidocs": {
+      "command": "aidocs",
+      "args": ["mcp", "docs/"]
+    }
+  }
+}
+```
+
+**Features:**
+- Works without pre-chunking (chunks markdown on-the-fly if needed)
+- Uses existing `.chunks.json` files if available (faster)
+- Keyword search with weighted scoring (title matches weighted 3x)
+- Returns content previews and hierarchy context
+
+**Example search result:**
+```json
+{
+  "file_path": "users/lifecycle.md",
+  "chunk_index": 2,
+  "title": "Creating Users",
+  "hierarchy": ["Users", "Creating Users"],
+  "content_preview": "To create a new user, navigate to...",
+  "score": 12
+}
+```
+
+**Usage Examples in Claude Code:**
+
+Once configured, Claude Code can use these tools automatically. You can prompt:
+
+```
+# Search documentation
+"Search our docs for authentication setup"
+"Find documentation about API rate limits"
+
+# Read specific docs
+"Read the user lifecycle documentation"
+"Show me the API reference section"
+
+# Explore structure
+"What documentation do we have?"
+"List all docs about payments"
+```
+
+**Best Practices:**
+
+1. **Prepare docs first** - Run `aidocs rag docs/` before starting MCP server for faster searches
+2. **Use descriptive headings** - The MCP chunks at `##` headings, clear titles improve search
+3. **Keep docs updated** - Re-run `aidocs rag --force` after major doc changes
+4. **Project-level config** - Add `.mcp.json` to your repo so the team shares the same setup
+5. **Combine with code context** - Ask Claude to "check our docs for X" while reviewing code
+
+**Troubleshooting:**
+
+| Issue | Solution |
+|-------|----------|
+| MCP not connecting | Restart Claude Code or run `/mcp` to reload servers |
+| Empty search results | Ensure docs directory has `.md` files |
+| Slow searches | Run `aidocs rag` to pre-chunk files |
 
 ## Slash Commands
 

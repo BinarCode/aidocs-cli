@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Optional
 
 import httpx
+from dotenv import load_dotenv
 
 OPENAI_API_URL = "https://api.openai.com/v1/embeddings"
 EMBEDDING_MODEL = "text-embedding-3-small"
@@ -17,7 +18,11 @@ RETRY_DELAY = 1.0
 
 
 def get_openai_api_key() -> Optional[str]:
-    """Get OpenAI API key from environment."""
+    """Get OpenAI API key from environment or .env file.
+
+    Loads from .env in current directory if present, then checks environment.
+    """
+    load_dotenv(override=False)
     return os.environ.get("OPENAI_API_KEY")
 
 
