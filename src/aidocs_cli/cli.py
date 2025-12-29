@@ -855,7 +855,7 @@ def watch(
         help="Skip embedding generation (only chunk files).",
     ),
     debounce: float = typer.Option(
-        2.0,
+        10.0,
         "--debounce",
         "-d",
         help="Seconds to wait after last change before processing.",
@@ -874,7 +874,7 @@ def watch(
     - Generates embeddings (if OPENAI_API_KEY is set)
     - Updates manifest and sync state
 
-    Uses debouncing to batch rapid changes (default: 2 seconds).
+    Uses debouncing to batch rapid changes (default: 10 seconds).
 
     Examples:
         aidocs watch                    # Watch docs/ with auto-embeddings
