@@ -843,5 +843,68 @@ def mcp_command(
     asyncio.run(run_server(target_dir))
 
 
+@app.command("watch")
+def watch(
+    docs_dir: Optional[str] = typer.Argument(
+        "docs",
+        help="Directory containing documentation to watch.",
+    ),
+    skip_vectors: bool = typer.Option(
+        False,
+        "--skip-vectors",
+        help="Skip embedding generation (only chunk files).",
+    ),
+    debounce: float = typer.Option(
+        2.0,
+        "--debounce",
+        "-d",
+        help="Seconds to wait after last change before processing.",
+    ),
+    table: str = typer.Option(
+        "doc_embeddings",
+        "--table",
+        "-t",
+        help="Target table name for embeddings.",
+    ),
+) -> None:
+    """Watch documentation directory and auto-sync on changes.
+
+    Monitors the docs directory for markdown file changes and automatically:
+    - Re-chunks modified files
+    - Generates embeddings (if OPENAI_API_KEY is set)
+    - Updates manifest and sync state
+
+    Uses debouncing to batch rapid changes (default: 2 seconds).
+
+    Examples:
+        aidocs watch                    # Watch docs/ with auto-embeddings
+        aidocs watch --skip-vectors     # Only chunk, no embeddings
+        aidocs watch --debounce 5       # Wait 5 seconds before processing
+        aidocs watch docs/users         # Watch specific subdirectory
+    """
+    from .watcher import watch_docs
+
+    target_dir = Path(docs_dir)
+
+    if not target_dir.exists():
+        console.print(f"[red]Error: Directory not found: {docs_dir}[/red]")
+        raise typer.Exit(1)
+
+    if not target_dir.is_dir():
+        console.print(f"[red]Error: Not a directory: {docs_dir}[/red]")
+        raise typer.Exit(1)
+
+    try:
+        watch_docs(
+            target_dir,
+            skip_vectors=skip_vectors,
+            debounce_seconds=debounce,
+            table_name=table,
+        )
+    except Exception as e:
+        console.print(f"[red]Error: {e}[/red]")
+        raise typer.Exit(1)
+
+
 if __name__ == "__main__":
     app()
