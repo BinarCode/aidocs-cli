@@ -489,6 +489,65 @@ Once configured, Claude Code can use these tools automatically. You can prompt:
 | Empty search results | Ensure docs directory has `.md` files |
 | Slow searches | Run `aidocs rag` to pre-chunk files |
 
+### `aidocs watch`
+
+Watch documentation directory for changes and automatically re-chunk files and regenerate embeddings.
+
+```bash
+aidocs watch                    # Watch docs/ with auto-embeddings
+aidocs watch --skip-vectors     # Only chunk, no embeddings
+aidocs watch --debounce 5       # Wait 5 seconds before processing
+aidocs watch docs/users         # Watch specific subdirectory
+```
+
+**Options:**
+| Option | Description |
+|--------|-------------|
+| `--skip-vectors` | Skip embedding generation (only chunk files) |
+| `--debounce, -d` | Seconds to wait after last change (default: 10) |
+| `--table, -t` | Target table name for embeddings (default: `doc_embeddings`) |
+
+**What it does:**
+1. Monitors the docs directory for `.md` file changes
+2. Debounces rapid changes (waits 10 seconds after last edit by default)
+3. Re-chunks modified files automatically
+4. Generates embeddings if `OPENAI_API_KEY` is set (use `--skip-vectors` to disable)
+5. Updates manifest and sync state
+
+**Real-time display:**
+```
+╭─────────────────────────────────────────╮
+│ Watching docs/                          │
+│                                         │
+│ Last update: 14:32:05                   │
+│ Files: 12 | Chunks: 45 | Embeddings: 45 │
+│                                         │
+│ Embeddings: enabled                     │
+│                                         │
+│ Recent:                                 │
+│   ✓ users/index.md (3 chunks)          │
+│   ✓ api/auth.md (5 chunks)             │
+│                                         │
+│ Press Ctrl+C to stop                    │
+╰─────────────────────────────────────────╯
+```
+
+**Use cases:**
+- Keep chunks updated while editing documentation
+- Auto-sync embeddings during documentation sprints
+- Run alongside `aidocs serve` for a complete dev workflow
+
+**Example workflow:**
+```bash
+# Terminal 1: Watch for changes
+aidocs watch
+
+# Terminal 2: Serve documentation
+aidocs serve
+
+# Edit docs in your editor - changes auto-sync!
+```
+
 ## Slash Commands
 
 After running `aidocs init`, these commands are available in Claude Code:
