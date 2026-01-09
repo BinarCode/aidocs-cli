@@ -849,10 +849,10 @@ def watch(
         "docs",
         help="Directory containing documentation to watch.",
     ),
-    skip_vectors: bool = typer.Option(
+    with_vectors: bool = typer.Option(
         False,
-        "--skip-vectors",
-        help="Skip embedding generation (only chunk files).",
+        "--with-vectors",
+        help="Enable embedding generation (requires OPENAI_API_KEY).",
     ),
     debounce: float = typer.Option(
         10.0,
@@ -871,14 +871,14 @@ def watch(
 
     Monitors the docs directory for markdown file changes and automatically:
     - Re-chunks modified files
-    - Generates embeddings (if OPENAI_API_KEY is set)
+    - Generates embeddings (if --with-vectors and OPENAI_API_KEY is set)
     - Updates manifest and sync state
 
     Uses debouncing to batch rapid changes (default: 10 seconds).
 
     Examples:
-        aidocs watch                    # Watch docs/ with auto-embeddings
-        aidocs watch --skip-vectors     # Only chunk, no embeddings
+        aidocs watch                    # Watch docs/, chunk only
+        aidocs watch --with-vectors     # Also generate embeddings
         aidocs watch --debounce 5       # Wait 5 seconds before processing
         aidocs watch docs/users         # Watch specific subdirectory
     """
@@ -897,7 +897,7 @@ def watch(
     try:
         watch_docs(
             target_dir,
-            skip_vectors=skip_vectors,
+            with_vectors=with_vectors,
             debounce_seconds=debounce,
             table_name=table,
         )

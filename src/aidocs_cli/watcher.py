@@ -124,7 +124,7 @@ class MarkdownEventHandler(FileSystemEventHandler):
 
 def process_pending_files(
     state: WatchState,
-    skip_vectors: bool,
+    with_vectors: bool,
     table_name: str,
     on_update: Optional[callable] = None,
 ) -> None:
@@ -174,7 +174,7 @@ def process_pending_files(
         status = "chunked"
 
         # Generate embeddings if enabled
-        if state.embeddings_enabled and not skip_vectors and state.api_key:
+        if state.embeddings_enabled and with_vectors and state.api_key:
             for chunk in chunks_data["chunks"]:
                 embedding = generate_embedding(chunk["content"], state.api_key)
                 if embedding:
@@ -219,7 +219,7 @@ def process_pending_files(
         on_update()
 
 
-def create_status_panel(state: WatchState, skip_vectors: bool) -> Panel:
+def create_status_panel(state: WatchState, with_vectors: bool) -> Panel:
     """Create a Rich panel showing watcher status."""
     lines = []
 
@@ -237,14 +237,14 @@ def create_status_panel(state: WatchState, skip_vectors: bool) -> Panel:
     # Stats
     stats_parts = [f"Files: {state.total_files}"]
     stats_parts.append(f"Chunks: {state.total_chunks}")
-    if state.embeddings_enabled and not skip_vectors:
+    if state.embeddings_enabled and with_vectors:
         stats_parts.append(f"Embeddings: {state.total_embeddings}")
     lines.append(" | ".join(stats_parts))
     lines.append("")
 
     # Embeddings status
-    if skip_vectors:
-        lines.append("[yellow]Embeddings: disabled (--skip-vectors)[/yellow]")
+    if not with_vectors:
+        lines.append("[yellow]Embeddings: disabled (use --with-vectors to enable)[/yellow]")
     elif state.embeddings_enabled:
         lines.append("[green]Embeddings: enabled[/green]")
     else:
@@ -276,7 +276,7 @@ def create_status_panel(state: WatchState, skip_vectors: bool) -> Panel:
 
 def watch_docs(
     docs_dir: Path,
-    skip_vectors: bool = False,
+    with_vectors: bool = False,
     debounce_seconds: float = 2.0,
     table_name: str = "doc_embeddings",
 ) -> None:
@@ -284,7 +284,7 @@ def watch_docs(
 
     Args:
         docs_dir: Directory to watch
-        skip_vectors: Skip embedding generation
+        with_vectors: Enable embedding generation
         debounce_seconds: Wait time after last change before processing
         table_name: PostgreSQL table name for embeddings
     """
@@ -292,7 +292,7 @@ def watch_docs(
 
     # Check for API key
     api_key = get_openai_api_key()
-    if api_key and not skip_vectors:
+    if api_key and with_vectors:
         state.api_key = api_key
         state.embeddings_enabled = True
 
@@ -310,7 +310,7 @@ def watch_docs(
         live_update_event.set()
 
     def do_process():
-        process_pending_files(state, skip_vectors, table_name, on_update)
+        process_pending_files(state, with_vectors, table_name, on_update)
 
     # Set up file watcher
     event_handler = MarkdownEventHandler(state, debounce_seconds, do_process)
@@ -320,7 +320,7 @@ def watch_docs(
 
     try:
         with Live(
-            create_status_panel(state, skip_vectors),
+            create_status_panel(state, with_vectors),
             console=console,
             refresh_per_second=1,
         ) as live:
@@ -330,7 +330,7 @@ def watch_docs(
                 live_update_event.clear()
 
                 # Update display
-                live.update(create_status_panel(state, skip_vectors))
+                live.update(create_status_panel(state, with_vectors))
 
     except KeyboardInterrupt:
         console.print("\n[yellow]Stopping watcher...[/yellow]")

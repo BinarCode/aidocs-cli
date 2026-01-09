@@ -495,7 +495,7 @@ Watch documentation directory for changes and automatically re-chunk files and r
 
 ```bash
 aidocs watch                    # Watch docs/ with auto-embeddings
-aidocs watch --skip-vectors     # Only chunk, no embeddings
+aidocs watch --with-vectors     # Generate also embeddings
 aidocs watch --debounce 5       # Wait 5 seconds before processing
 aidocs watch docs/users         # Watch specific subdirectory
 ```
@@ -503,7 +503,7 @@ aidocs watch docs/users         # Watch specific subdirectory
 **Options:**
 | Option | Description |
 |--------|-------------|
-| `--skip-vectors` | Skip embedding generation (only chunk files) |
+| `--with-vectors` | Include embedding generation |
 | `--debounce, -d` | Seconds to wait after last change (default: 10) |
 | `--table, -t` | Target table name for embeddings (default: `doc_embeddings`) |
 
@@ -511,7 +511,7 @@ aidocs watch docs/users         # Watch specific subdirectory
 1. Monitors the docs directory for `.md` file changes
 2. Debounces rapid changes (waits 10 seconds after last edit by default)
 3. Re-chunks modified files automatically
-4. Generates embeddings if `OPENAI_API_KEY` is set (use `--skip-vectors` to disable)
+4. Generates embeddings if `OPENAI_API_KEY` is set (use `--with-vectors` to enable)
 5. Updates manifest and sync state
 
 **Real-time display:**

@@ -32,8 +32,8 @@ aidocs mcp docs/          # Start MCP server for docs directory
 aidocs export-pdf docs/page.md
 
 # Watch mode (auto-sync on file changes)
-aidocs watch              # Watch docs/ and auto-chunk + embed on changes
-aidocs watch --skip-vectors  # Only chunk, skip embeddings
+aidocs watch              # Watch docs/ and auto-chunk on changes
+aidocs watch --with-vectors  # Also generate embeddings
 ```
 
 ## Architecture
