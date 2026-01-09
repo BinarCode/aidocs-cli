@@ -1,6 +1,6 @@
 [project]
 name = "aidocs"
-version = "0.16.0"
+version = "0.17.0"
 description = "AI-powered documentation generator for web applications. Install docs commands into your Claude Code project."
 readme = "README.md"
 license = { text = "MIT" }
@@ -26,6 +26,8 @@ dependencies = [
     "mkdocs-material>=9.5.0",
     "pyyaml>=6.0",
     "mcp>=1.0.0",
+    "watchdog>=4.0.0",
+    "python-dotenv>=1.0.0",
 ]
 
 [project.scripts]
