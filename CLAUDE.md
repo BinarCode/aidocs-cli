@@ -30,6 +30,10 @@ aidocs mcp docs/          # Start MCP server for docs directory
 
 # PDF export
 aidocs export-pdf docs/page.md
+
+# Watch mode (auto-sync on file changes)
+aidocs watch              # Watch docs/ and auto-chunk on changes
+aidocs watch --with-vectors  # Also generate embeddings
 ```
 
 ## Architecture
@@ -37,13 +41,14 @@ aidocs export-pdf docs/page.md
 ```
 src/aidocs_cli/
 ├── __init__.py       # Version and entry point
-├── cli.py            # Typer CLI commands (init, check, serve, rag-*, export-pdf)
+├── cli.py            # Typer CLI commands (init, check, serve, rag-*, export-pdf, watch)
 ├── installer.py      # Copies templates to target project (.claude/commands/, .claude/workflows/)
 ├── chunker.py        # Splits markdown at ## headings for RAG
 ├── embeddings.py     # OpenAI embeddings + SQL generation for pgvector
 ├── server.py         # MkDocs config generation and nav discovery
 ├── pdf_exporter.py   # Markdown→HTML→PDF with Chrome/Playwright
 ├── mcp_server.py     # MCP server exposing docs via tools (list, search, read)
+├── watcher.py        # File system watcher for auto-sync (watchdog + Rich Live)
 └── templates/
     ├── commands/docs/    # Slash command definitions (*.md)
     └── workflows/        # Workflow implementations per command
@@ -78,7 +83,7 @@ Version is defined in two places (keep in sync):
 
 ## Dependencies
 
-Core: typer, rich, httpx, mkdocs, mkdocs-material, pyyaml, mcp
+Core: typer, rich, httpx, mkdocs, mkdocs-material, pyyaml, mcp, watchdog, python-dotenv
 
 Python 3.11+ required. Build system uses hatchling.
 
