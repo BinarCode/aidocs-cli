@@ -12,6 +12,7 @@ from rich.panel import Panel
 
 from . import __version__
 from .chunker import chunk_directory
+from .coverage import analyze_coverage, save_coverage_report, CoverageReport
 from .embeddings import generate_sync_sql, get_openai_api_key
 from .installer import check_tools, install_docs_module
 from .pdf_exporter import export_markdown_to_pdf
@@ -901,6 +902,288 @@ def watch(
             debounce_seconds=debounce,
             table_name=table,
         )
+    except Exception as e:
+        console.print(f"[red]Error: {e}[/red]")
+        raise typer.Exit(1)
+
+
+def _render_progress_bar(percent: float, width: int = 12) -> str:
+    """Render a text-based progress bar."""
+    filled = int(width * percent / 100)
+    empty = width - filled
+    return "█" * filled + "░" * empty
+
+
+def _get_coverage_color(percent: float) -> str:
+    """Get color based on coverage percentage."""
+    if percent >= 80:
+        return "green"
+    elif percent >= 50:
+        return "yellow"
+    else:
+        return "red"
+
+
+@app.command("coverage")
+def coverage(
+    docs_dir: Optional[str] = typer.Argument(
+        "docs",
+        help="Directory containing documentation.",
+    ),
+    codebase: Optional[str] = typer.Option(
+        None,
+        "--codebase",
+        "-c",
+        help="Path to codebase root (default: parent of docs dir).",
+    ),
+    format_output: str = typer.Option(
+        "summary",
+        "--format",
+        "-f",
+        help="Output format: summary, json, or csv.",
+    ),
+    threshold: Optional[float] = typer.Option(
+        None,
+        "--threshold",
+        "-t",
+        help="Minimum coverage percentage (exit 1 if below).",
+    ),
+    ci: bool = typer.Option(
+        False,
+        "--ci",
+        help="CI mode: exit 1 if coverage below 80%% (shorthand for --threshold 80).",
+    ),
+    save: bool = typer.Option(
+        True,
+        "--save/--no-save",
+        help="Save report to .chunks/coverage.json.",
+    ),
+    show_all: bool = typer.Option(
+        False,
+        "--all",
+        "-a",
+        help="Show all items (documented and undocumented).",
+    ),
+) -> None:
+    """Analyze documentation coverage for your codebase.
+
+    Scans your codebase for routes, components, and models, then checks
+    which items are mentioned in your documentation.
+
+    Examples:
+        aidocs coverage                     # Show coverage summary
+        aidocs coverage --format json       # Machine-readable output
+        aidocs coverage --ci                # Exit 1 if below 80%
+        aidocs coverage --threshold 70      # Custom threshold
+        aidocs coverage -c ./src            # Specify codebase path
+        aidocs coverage --all               # Show all items
+    """
+    import json as json_module
+
+    target_docs = Path(docs_dir)
+
+    if not target_docs.exists():
+        console.print(f"[red]Error: Documentation directory not found: {docs_dir}[/red]")
+        raise typer.Exit(1)
+
+    if not target_docs.is_dir():
+        console.print(f"[red]Error: Not a directory: {docs_dir}[/red]")
+        raise typer.Exit(1)
+
+    # Determine codebase directory
+    if codebase:
+        codebase_dir = Path(codebase)
+    else:
+        # Default: parent of docs dir (or current dir if docs is at root)
+        codebase_dir = target_docs.parent
+        if codebase_dir == target_docs:
+            codebase_dir = Path.cwd()
+
+    if not codebase_dir.exists():
+        console.print(f"[red]Error: Codebase directory not found: {codebase_dir}[/red]")
+        raise typer.Exit(1)
+
+    # Set threshold for CI mode
+    effective_threshold = threshold
+    if ci and threshold is None:
+        effective_threshold = 80.0
+
+    # JSON format - minimal output
+    if format_output == "json":
+        def on_status(msg: str) -> None:
+            pass  # Suppress status messages for JSON output
+
+        try:
+            report = analyze_coverage(codebase_dir, target_docs, on_status=on_status)
+
+            if save:
+                save_coverage_report(report, target_docs)
+
+            console.print(json_module.dumps(report.to_dict(), indent=2))
+
+            # Check threshold
+            if effective_threshold is not None:
+                if report.overall_coverage < effective_threshold:
+                    raise typer.Exit(1)
+
+        except typer.Exit:
+            raise
+        except Exception as e:
+            error_output = {"success": False, "error": str(e)}
+            console.print(json_module.dumps(error_output))
+            raise typer.Exit(1)
+
+        return
+
+    # CSV format
+    if format_output == "csv":
+        def on_status(msg: str) -> None:
+            pass
+
+        try:
+            report = analyze_coverage(codebase_dir, target_docs, on_status=on_status)
+
+            if save:
+                save_coverage_report(report, target_docs)
+
+            # Print CSV header
+            console.print("category,name,file,line,documented")
+
+            for cat_name, category in report.categories.items():
+                for item in category.items:
+                    doc_status = "yes" if item.documented else "no"
+                    # Escape commas in names/paths
+                    name = f'"{item.name}"' if "," in item.name else item.name
+                    file_path = f'"{item.file_path}"' if "," in item.file_path else item.file_path
+                    console.print(f"{cat_name},{name},{file_path},{item.line_number},{doc_status}")
+
+            # Check threshold
+            if effective_threshold is not None:
+                if report.overall_coverage < effective_threshold:
+                    raise typer.Exit(1)
+
+        except typer.Exit:
+            raise
+        except Exception as e:
+            console.print(f"[red]Error: {e}[/red]")
+            raise typer.Exit(1)
+
+        return
+
+    # Summary format (default) - rich output
+    console.print("[blue]Analyzing documentation coverage...[/blue]")
+    console.print()
+
+    def on_status(msg: str) -> None:
+        console.print(f"  [dim]{msg}[/dim]")
+
+    try:
+        report = analyze_coverage(codebase_dir, target_docs, on_status=on_status)
+        console.print()
+
+        if save:
+            report_path = save_coverage_report(report, target_docs)
+
+        # Check if we found anything
+        if not report.categories:
+            console.print(Panel.fit(
+                "[yellow]No documentable items found in codebase[/yellow]\n\n"
+                f"Searched: {codebase_dir}\n\n"
+                "[dim]Ensure the codebase path is correct and contains\n"
+                "routes, components, or models.[/dim]",
+                title="Coverage Analysis",
+                border_style="yellow",
+            ))
+            return
+
+        # Build summary output
+        summary_lines = []
+        overall_color = _get_coverage_color(report.overall_coverage)
+
+        for cat_name, category in report.categories.items():
+            color = _get_coverage_color(category.coverage_percent)
+            bar = _render_progress_bar(category.coverage_percent)
+            percent = f"{category.coverage_percent:.0f}%"
+            ratio = f"{category.documented}/{category.total}"
+
+            # Pad category name for alignment
+            display_name = category.name + ":"
+            summary_lines.append(
+                f"  [{color}]{display_name:<12}[/{color}] {ratio:>6}  ({percent:>4})  {bar}"
+            )
+
+        summary_text = "\n".join(summary_lines)
+
+        # Overall coverage line
+        overall_bar = _render_progress_bar(report.overall_coverage)
+        overall_text = (
+            f"\n  [bold]Overall:[/bold]     "
+            f"{report.total_documented}/{report.total_items}  "
+            f"([{overall_color}]{report.overall_coverage:.0f}%[/{overall_color}])  {overall_bar}"
+        )
+
+        console.print(Panel.fit(
+            f"[bold]Documentation Coverage Report[/bold]\n"
+            f"{'─' * 45}\n\n"
+            f"{summary_text}\n"
+            f"{overall_text}",
+            border_style=overall_color,
+        ))
+
+        # Show undocumented items
+        has_undocumented = any(cat.undocumented for cat in report.categories.values())
+
+        if has_undocumented:
+            console.print()
+            console.print("[bold]Missing documentation:[/bold]")
+
+            for cat_name, category in report.categories.items():
+                if category.undocumented:
+                    console.print(f"\n  [dim]{category.name}:[/dim]")
+                    # Show up to 10 items per category
+                    items_to_show = category.undocumented[:10]
+                    for item in items_to_show:
+                        console.print(f"    [red]✗[/red] {item.name}")
+                        console.print(f"      [dim]{item.file_path}:{item.line_number}[/dim]")
+
+                    remaining = len(category.undocumented) - 10
+                    if remaining > 0:
+                        console.print(f"    [dim]... and {remaining} more[/dim]")
+
+        # Show all items if requested
+        if show_all:
+            console.print()
+            console.print("[bold]All items:[/bold]")
+
+            for cat_name, category in report.categories.items():
+                console.print(f"\n  [dim]{category.name}:[/dim]")
+                for item in category.items:
+                    icon = "[green]✓[/green]" if item.documented else "[red]✗[/red]"
+                    console.print(f"    {icon} {item.name}")
+                    console.print(f"      [dim]{item.file_path}:{item.line_number}[/dim]")
+
+        # Show where report was saved
+        if save:
+            console.print()
+            console.print(f"[dim]Report saved to: {report_path}[/dim]")
+
+        # Check threshold
+        if effective_threshold is not None:
+            console.print()
+            if report.overall_coverage >= effective_threshold:
+                console.print(
+                    f"[green]✓ Coverage {report.overall_coverage:.1f}% "
+                    f"meets threshold of {effective_threshold}%[/green]"
+                )
+            else:
+                console.print(
+                    f"[red]✗ Coverage {report.overall_coverage:.1f}% "
+                    f"is below threshold of {effective_threshold}%[/red]"
+                )
+                raise typer.Exit(1)
+
+    except typer.Exit:
+        raise
     except Exception as e:
         console.print(f"[red]Error: {e}[/red]")
         raise typer.Exit(1)

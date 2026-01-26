@@ -34,6 +34,11 @@ aidocs export-pdf docs/page.md
 # Watch mode (auto-sync on file changes)
 aidocs watch              # Watch docs/ and auto-chunk on changes
 aidocs watch --with-vectors  # Also generate embeddings
+
+# Documentation coverage analysis
+aidocs coverage           # Show coverage report
+aidocs coverage --format json  # Machine-readable output
+aidocs coverage --ci      # Exit code 1 if below 80%
 ```
 
 ## Architecture
@@ -41,9 +46,10 @@ aidocs watch --with-vectors  # Also generate embeddings
 ```
 src/aidocs_cli/
 ├── __init__.py       # Version and entry point
-├── cli.py            # Typer CLI commands (init, check, serve, rag-*, export-pdf, watch)
+├── cli.py            # Typer CLI commands (init, check, serve, rag-*, export-pdf, watch, coverage)
 ├── installer.py      # Copies templates to target project (.claude/commands/, .claude/workflows/)
 ├── chunker.py        # Splits markdown at ## headings for RAG
+├── coverage.py       # Documentation coverage analysis (routes, components, models detection)
 ├── embeddings.py     # OpenAI embeddings + SQL generation for pgvector
 ├── server.py         # MkDocs config generation and nav discovery
 ├── pdf_exporter.py   # Markdown→HTML→PDF with Chrome/Playwright
@@ -59,6 +65,7 @@ src/aidocs_cli/
 - **CLI (cli.py)**: Uses Typer with Rich for terminal UI. Entry point is `app()`.
 - **Installer**: Copies command/workflow templates to target project's `.claude/` directory (or `.cursor/` for Cursor).
 - **Chunker**: Creates `.chunks.json` files alongside markdown, tracks changes via `docs/.chunks/manifest.json`.
+- **Coverage**: Analyzes codebase for routes/components/models, matches against docs, reports coverage with visual progress bars.
 - **Embeddings**: Calls OpenAI API (text-embedding-3-small, 1536 dimensions), outputs `docs/.chunks/sync.sql` for pgvector import.
 - **Server**: Auto-discovers nav structure from folder hierarchy, generates ephemeral `mkdocs.yml`.
 
