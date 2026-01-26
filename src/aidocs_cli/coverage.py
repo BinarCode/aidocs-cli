@@ -248,17 +248,17 @@ def find_routes(codebase_dir: Path, frameworks: dict[str, bool]) -> list[Coverag
             for ext in route_extensions:
                 for route_file in app_dir.rglob(f"route.{ext}"):
                     try:
-                        content = route_file.read_text()
+                        content = route_file.read_text(encoding="utf-8")
                     except Exception:
                         continue
 
                     rel_path = route_file.relative_to(app_dir)
 
-                    # Extract route path from file location
+                    # Extract route path from file location (parent excludes filename)
                     route_path = "/" + str(rel_path.parent).replace("\\", "/")
                     route_path = re.sub(r"\([^)]+\)/", "", route_path)  # Remove route groups
-                    route_path = route_path.replace("/route", "")
-                    if route_path == "" or route_path == "/.":
+                    # Normalize root path
+                    if route_path in ("", "/.", "/."):
                         route_path = "/"
 
                     for pattern, _ in NEXTJS_APP_ROUTE_PATTERNS:
@@ -276,10 +276,11 @@ def find_routes(codebase_dir: Path, frameworks: dict[str, bool]) -> list[Coverag
             for ext in route_extensions:
                 for page_file in app_dir.rglob(f"page.{ext}"):
                     rel_path = page_file.relative_to(app_dir)
+                    # Extract route path from file location (parent excludes filename)
                     route_path = "/" + str(rel_path.parent).replace("\\", "/")
-                    route_path = re.sub(r"\([^)]+\)/", "", route_path)
-                    route_path = route_path.replace("/page", "")
-                    if route_path == "" or route_path == "/" or route_path == "/.":
+                    route_path = re.sub(r"\([^)]+\)/", "", route_path)  # Remove route groups
+                    # Normalize root path
+                    if route_path in ("", "/", "/."):
                         route_path = "/"
 
                     routes.append(CoverageItem(
@@ -769,17 +770,18 @@ def save_coverage_report(report: CoverageReport, docs_dir: Path) -> Path:
     return report_path
 
 
-def load_coverage_report(docs_dir: Path) -> Optional[CoverageReport]:
-    """Load previous coverage report if it exists."""
+def load_coverage_report(docs_dir: Path) -> Optional[dict]:
+    """Load previous coverage report if it exists.
+
+    Returns the raw dict from the JSON file. Use this for comparing
+    coverage between runs or displaying historical data.
+    """
     report_path = docs_dir / ".chunks" / "coverage.json"
 
     if not report_path.exists():
         return None
 
     try:
-        data = json.loads(report_path.read_text())
-        # Convert dict back to CoverageReport
-        # (simplified - just returns dict for now)
-        return data
+        return json.loads(report_path.read_text(encoding="utf-8"))
     except Exception:
         return None

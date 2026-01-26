@@ -12,7 +12,7 @@ from rich.panel import Panel
 
 from . import __version__
 from .chunker import chunk_directory
-from .coverage import analyze_coverage, save_coverage_report, CoverageReport
+from .coverage import analyze_coverage, save_coverage_report
 from .embeddings import generate_sync_sql, get_openai_api_key
 from .installer import check_tools, install_docs_module
 from .pdf_exporter import export_markdown_to_pdf
@@ -1037,6 +1037,9 @@ def coverage(
 
     # CSV format
     if format_output == "csv":
+        import csv
+        import io
+
         def on_status(msg: str) -> None:
             pass
 
@@ -1046,16 +1049,19 @@ def coverage(
             if save:
                 save_coverage_report(report, target_docs)
 
-            # Print CSV header
-            console.print("category,name,file,line,documented")
+            # Use csv module for proper RFC 4180 escaping
+            output = io.StringIO()
+            writer = csv.writer(output)
+
+            # Write header
+            writer.writerow(["category", "name", "file", "line", "documented"])
 
             for cat_name, category in report.categories.items():
                 for item in category.items:
                     doc_status = "yes" if item.documented else "no"
-                    # Escape commas in names/paths
-                    name = f'"{item.name}"' if "," in item.name else item.name
-                    file_path = f'"{item.file_path}"' if "," in item.file_path else item.file_path
-                    console.print(f"{cat_name},{name},{file_path},{item.line_number},{doc_status}")
+                    writer.writerow([cat_name, item.name, item.file_path, item.line_number, doc_status])
+
+            console.print(output.getvalue().rstrip())
 
             # Check threshold
             if effective_threshold is not None:
