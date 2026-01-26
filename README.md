@@ -548,6 +548,69 @@ aidocs serve
 # Edit docs in your editor - changes auto-sync!
 ```
 
+### `aidocs coverage`
+
+Analyze documentation coverage for your codebase. Scans for routes, components, and models, then checks which items are mentioned in your documentation.
+
+```bash
+aidocs coverage                     # Show coverage summary
+aidocs coverage --format json       # Machine-readable output
+aidocs coverage --format csv        # CSV export
+aidocs coverage --ci                # Exit code 1 if below 80%
+aidocs coverage --threshold 70      # Custom threshold
+aidocs coverage -c ./src            # Specify codebase path
+aidocs coverage --all               # Show all items
+```
+
+**Options:**
+| Option | Description |
+|--------|-------------|
+| `--codebase, -c` | Path to codebase root (default: parent of docs dir) |
+| `--format, -f` | Output format: `summary`, `json`, or `csv` |
+| `--threshold, -t` | Minimum coverage percentage (exit 1 if below) |
+| `--ci` | CI mode: exit 1 if coverage below 80% |
+| `--save/--no-save` | Save report to `.chunks/coverage.json` (default: save) |
+| `--all, -a` | Show all items (documented and undocumented) |
+
+**Example output:**
+```
+╭───────────────────────────────────────────────╮
+│ Documentation Coverage Report                 │
+│ ───────────────────────────────────────────── │
+│                                               │
+│   Routes:       12/15  ( 80%)  █████████░░░   │
+│   Components:    8/20  ( 40%)  ████░░░░░░░░   │
+│   Models:        5/5   (100%)  ████████████   │
+│                                               │
+│   Overall:    25/40  (63%)  ███████░░░░░      │
+╰───────────────────────────────────────────────╯
+
+Missing documentation:
+  Routes:
+    ✗ POST /api/webhooks/stripe
+      src/app/api/webhooks/stripe/route.ts:1
+  Components:
+    ✗ PaymentForm
+      src/components/PaymentForm.tsx:1
+```
+
+**Supported frameworks:**
+- **Next.js** - App Router routes and pages
+- **React** - Function and class components
+- **Vue/Svelte** - Single-file components
+- **Express** - Route handlers
+- **FastAPI/Flask** - Python API routes
+- **Laravel** - PHP routes
+- **Prisma** - Database models
+- **TypeScript** - Interfaces and types
+
+**CI/CD integration:**
+```yaml
+# GitHub Actions example
+- name: Check documentation coverage
+  run: aidocs coverage --ci
+```
+
 ## Slash Commands
 
 After running `aidocs init`, these commands are available in Claude Code:
