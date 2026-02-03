@@ -36,6 +36,8 @@ def install_docs_module(
         base_dir = target_dir / ".claude"
     elif ai == "cursor":
         base_dir = target_dir / ".cursor"
+    elif ai == "copilot":
+        base_dir = target_dir / ".copilot"
     else:
         base_dir = target_dir / ".claude"
 
