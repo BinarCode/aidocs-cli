@@ -76,11 +76,16 @@ def init(
     """Initialize docs module in a project.
 
     Examples:
-        aidocs init .              # Current directory
-        aidocs init my-project     # New directory
-        aidocs init . --force      # Overwrite existing
+        aidocs init .                # Current directory (Claude)
+        aidocs init my-project       # New directory (Claude)
+        aidocs init . --ai cursor    # For Cursor IDE
+        aidocs init . --ai copilot   # For GitHub Copilot (installs to ~/.copilot)
+        aidocs init . --force        # Overwrite existing
     """
-    if project_name is None or project_name == ".":
+    if ai == "copilot":
+        # For copilot, target_dir is not used (installs to ~/.copilot)
+        console.print(f"[blue]Installing Copilot skills to ~/.copilot...[/blue]")
+    elif project_name is None or project_name == ".":
         target_dir = Path.cwd()
         console.print(f"[blue]Initializing docs module in current directory...[/blue]")
     else:
@@ -89,20 +94,39 @@ def init(
             target_dir.mkdir(parents=True)
             console.print(f"[blue]Created directory: {project_name}[/blue]")
         console.print(f"[blue]Initializing docs module in {project_name}...[/blue]")
+    
+    # Set target_dir to current directory if not set (for copilot case)
+    if 'target_dir' not in locals():
+        target_dir = Path.cwd()
 
     try:
         install_docs_module(target_dir, ai=ai, force=force, no_git=no_git)
 
         console.print()
-        console.print(Panel.fit(
-            "[green]Docs module installed successfully![/green]\n\n"
-            "[bold]Next steps:[/bold]\n"
-            "1. Run [cyan]/docs:init[/cyan] in Claude Code to configure your project\n"
-            "2. Run [cyan]/docs:generate <url>[/cyan] to document a page\n\n"
-            "[dim]Requires Playwright MCP for browser automation.[/dim]",
-            title="Success",
-            border_style="green",
-        ))
+        if ai == "copilot":
+            console.print(Panel.fit(
+                "[green]Copilot skills installed successfully![/green]\n\n"
+                "[bold]Location:[/bold] ~/.copilot/skills/\n\n"
+                "[bold]Available skills:[/bold]\n"
+                "• /docs-generate - Generate documentation from URL\n"
+                "• /docs-init - Initialize documentation structure\n"
+                "• /docs-analyze - Analyze documentation coverage\n"
+                "• /docs-flow - Document user flows\n"
+                "• And more...\n\n"
+                "[dim]Use these skills in GitHub Copilot CLI with / prefix[/dim]",
+                title="Success",
+                border_style="green",
+            ))
+        else:
+            console.print(Panel.fit(
+                "[green]Docs module installed successfully![/green]\n\n"
+                "[bold]Next steps:[/bold]\n"
+                "1. Run [cyan]/docs:init[/cyan] in Claude Code to configure your project\n"
+                "2. Run [cyan]/docs:generate <url>[/cyan] to document a page\n\n"
+                "[dim]Requires Playwright MCP for browser automation.[/dim]",
+                title="Success",
+                border_style="green",
+            ))
     except Exception as e:
         console.print(f"[red]Error: {e}[/red]")
         raise typer.Exit(1)

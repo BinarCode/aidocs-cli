@@ -63,7 +63,7 @@ src/aidocs_cli/
 ### Key Components
 
 - **CLI (cli.py)**: Uses Typer with Rich for terminal UI. Entry point is `app()`.
-- **Installer**: Copies command/workflow templates to target project's `.claude/` directory (or `.cursor/` for Cursor).
+- **Installer**: Copies command/workflow templates to target project's `.claude/` or `.cursor/` directory. For GitHub Copilot, installs skills to `~/.copilot/skills/` (global installation).
 - **Chunker**: Creates `.chunks.json` files alongside markdown, tracks changes via `docs/.chunks/manifest.json`.
 - **Coverage**: Analyzes codebase for routes/components/models, matches against docs, reports coverage with visual progress bars.
 - **Embeddings**: Calls OpenAI API (text-embedding-3-small, 1536 dimensions), outputs `docs/.chunks/sync.sql` for pgvector import.
@@ -72,7 +72,8 @@ src/aidocs_cli/
 ### Slash Commands Flow
 
 When `aidocs init` runs:
-1. Templates from `src/aidocs_cli/templates/` are copied to project's `.claude/commands/docs/` and `.claude/workflows/docs/`
+1. **For Claude/Cursor**: Templates from `src/aidocs_cli/templates/` are copied to project's `.claude/commands/docs/` and `.claude/workflows/docs/` (or `.cursor/` for Cursor)
+2. **For Copilot**: Skills from `src/aidocs_cli/copilot-templates/skills/` are copied to `~/.copilot/skills/` (global installation)
 2. Each command (e.g., `generate.md`) references a workflow that defines the multi-step process
 3. Workflows use Playwright MCP for browser automation when needed
 

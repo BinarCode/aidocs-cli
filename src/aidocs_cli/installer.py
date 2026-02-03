@@ -11,9 +11,16 @@ from rich.console import Console
 console = Console()
 
 
-def get_templates_path() -> Path:
-    """Get the path to bundled templates."""
-    return Path(resources.files("aidocs_cli")) / "templates"
+def get_templates_path(ai: str = "claude") -> Path:
+    """Get the path to bundled templates.
+    
+    Args:
+        ai: AI assistant type (claude, cursor, copilot)
+    """
+    base_path = Path(resources.files("aidocs_cli"))
+    if ai == "copilot":
+        return base_path / "copilot-templates"
+    return base_path / "templates"
 
 
 def install_docs_module(
@@ -30,14 +37,17 @@ def install_docs_module(
         force: Overwrite existing files
         no_git: Skip git initialization
     """
-    templates_path = get_templates_path()
+    # Copilot uses a different structure and installs globally
+    if ai == "copilot":
+        install_copilot_skills(force=force)
+        return
+    
+    templates_path = get_templates_path(ai)
 
     if ai == "claude":
         base_dir = target_dir / ".claude"
     elif ai == "cursor":
         base_dir = target_dir / ".cursor"
-    elif ai == "copilot":
-        base_dir = target_dir / ".copilot"
     else:
         base_dir = target_dir / ".claude"
 
@@ -88,6 +98,48 @@ def install_docs_module(
             console.print("  [green]✓[/green] Git repository initialized")
         except (subprocess.CalledProcessError, FileNotFoundError):
             console.print("  [yellow]![/yellow] Could not initialize git (git not found)")
+
+
+def install_copilot_skills(force: bool = False) -> None:
+    """Install Copilot skills to ~/.copilot directory.
+    
+    Args:
+        force: Overwrite existing files
+    """
+    import os
+    
+    home_dir = Path.home()
+    copilot_dir = home_dir / ".copilot"
+    skills_dest = copilot_dir / "skills"
+    
+    templates_path = get_templates_path("copilot")
+    skills_src = templates_path / "skills"
+    
+    if not skills_src.exists():
+        console.print("[red]✗[/red] Copilot templates not found")
+        return
+    
+    if skills_dest.exists() and not force:
+        raise FileExistsError(
+            f"Copilot skills directory already exists: {skills_dest}\n"
+            "Use --force to overwrite."
+        )
+    
+    console.print(f"[blue]Installing Copilot skills to {copilot_dir}...[/blue]")
+    console.print("[dim]Copying skill files...[/dim]")
+    
+    skills_dest.mkdir(parents=True, exist_ok=True)
+    
+    # Copy all skill files
+    for item in skills_src.iterdir():
+        if item.is_file():
+            dest_file = skills_dest / item.name
+            shutil.copy2(item, dest_file)
+            console.print(f"  [green]✓[/green] ~/.copilot/skills/{item.name}")
+        elif item.is_dir():
+            dest_dir = skills_dest / item.name
+            shutil.copytree(item, dest_dir, dirs_exist_ok=True)
+            console.print(f"  [green]✓[/green] ~/.copilot/skills/{item.name}/")
 
 
 def update_gitignore(target_dir: Path) -> None:

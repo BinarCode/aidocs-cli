@@ -180,18 +180,21 @@ aidocs init . --force          # Reinstall commands in project
 Initialize the docs module in a project.
 
 ```bash
-aidocs init .                  # Current directory
-aidocs init my-project         # New directory
+aidocs init .                  # Current directory (Claude)
+aidocs init my-project         # New directory (Claude)
 aidocs init . --force          # Overwrite existing
-aidocs init . --ai cursor      # Use with Cursor
+aidocs init . --ai cursor      # Use with Cursor IDE
+aidocs init . --ai copilot     # Use with GitHub Copilot (installs to ~/.copilot)
 ```
 
 **Options:**
 | Option | Description |
 |--------|-------------|
-| `--ai` | AI assistant: `claude`, `cursor`, `copilot` (default: `claude`) |
+| `--ai` | AI assistant: `claude` (project-local), `cursor` (project-local), `copilot` (global ~/.copilot) - default: `claude` |
 | `--force, -f` | Overwrite existing files |
 | `--no-git` | Skip git initialization |
+
+**Note:** Copilot mode installs skills globally to `~/.copilot/skills/` instead of the project directory.
 
 ### `aidocs check`
 
