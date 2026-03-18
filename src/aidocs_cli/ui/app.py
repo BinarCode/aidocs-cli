@@ -36,6 +36,7 @@ def create_app(
     base_branch: str = "main",
     media_path: str | None = None,
     docs_prefix: str | None = None,
+    base_path: str = "",
 ) -> FastAPI:
     """Create and configure the FastAPI application."""
     owner, repo = github_repo.split("/", 1)
@@ -137,6 +138,7 @@ def create_app(
         template = (TEMPLATE_DIR / "index.html").read_text(encoding="utf-8")
         rendered = template.replace("{{ tree }}", tree_html)
         rendered = rendered.replace("{{ docs_prefix }}", str(docs_dir))
+        rendered = rendered.replace("{{ base_path }}", base_path)
 
         success_html = ""
         if "success" in flash:
@@ -208,7 +210,7 @@ def create_app(
         except Exception as e:
             _flash(request, "error", f"Failed: {e}")
 
-        return RedirectResponse("/", status_code=303)
+        return RedirectResponse(f"{base_path}/", status_code=303)
 
     @app.post("/api/update")
     async def api_update(request: Request):
@@ -243,7 +245,7 @@ def create_app(
         except Exception as e:
             _flash(request, "error", f"Failed to create PR: {e}")
 
-        return RedirectResponse("/", status_code=303)
+        return RedirectResponse(f"{base_path}/", status_code=303)
 
     @app.post("/api/delete")
     async def api_delete(request: Request):
@@ -263,7 +265,7 @@ def create_app(
         except Exception as e:
             _flash(request, "error", f"Failed to create delete PR: {e}")
 
-        return RedirectResponse("/", status_code=303)
+        return RedirectResponse(f"{base_path}/", status_code=303)
 
     @app.post("/api/upload-image")
     async def api_upload_image(

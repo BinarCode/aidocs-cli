@@ -32,7 +32,7 @@
         <div class="max-w-[1600px] mx-auto px-6 py-3 flex items-center justify-between">
             <div class="flex items-center gap-2">
                 <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                <a href="/" class="text-base font-semibold text-gray-800">Docs Editor</a>
+                <a href="{{ base_path }}/" class="text-base font-semibold text-gray-800">Docs Editor</a>
             </div>
             <button type="button" id="sync-btn"
                     class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition">
@@ -46,7 +46,7 @@
         {{ flash_messages }}
 
         <!-- Hidden delete form -->
-        <form id="delete-form" action="/api/delete" method="POST" class="hidden">
+        <form id="delete-form" action="{{ base_path }}/api/delete" method="POST" class="hidden">
             <input type="hidden" name="path" id="d-path">
         </form>
 
@@ -86,7 +86,7 @@
                 </div>
 
                 <!-- Edit Form -->
-                <form action="/api/update" method="POST"
+                <form action="{{ base_path }}/api/update" method="POST"
                       class="hidden flex-1 flex flex-col" id="edit-form">
                     <input type="hidden" name="path" id="f-path">
                     <input type="hidden" name="uploaded_images" id="f-uploaded-images">
@@ -181,7 +181,7 @@
                 </form>
 
                 <!-- Create Form -->
-                <form action="/api/store" method="POST"
+                <form action="{{ base_path }}/api/store" method="POST"
                       class="hidden flex-1 flex flex-col" id="create-form">
 
                     <div class="bg-white rounded-t-xl border border-gray-200 px-5 py-3 flex items-center justify-between shadow-sm">
@@ -265,6 +265,7 @@
 
         <script>
             const docsPrefix = '{{ docs_prefix }}';
+            const basePath = '{{ base_path }}';
             const md = window.markdownit({ html: true, linkify: true, typographer: true });
             let currentTab = localStorage.getItem('docs-editor-tab') || 'editor';
             let previewTimer = null;
@@ -418,7 +419,7 @@
 
                     showPanel('loading-state');
 
-                    fetch('/api/edit?path=' + encodeURIComponent(this.dataset.path), {
+                    fetch(basePath + '/api/edit?path=' + encodeURIComponent(this.dataset.path), {
                         headers: { 'Accept': 'application/json' }
                     })
                     .then(r => r.json())
@@ -462,7 +463,7 @@
                 setDirty(false);
                 showPanel('loading-state');
 
-                fetch('/api/folders', { headers: { 'Accept': 'application/json' } })
+                fetch(basePath + '/api/folders', { headers: { 'Accept': 'application/json' } })
                     .then(r => r.json())
                     .then(data => {
                         const select = document.getElementById('c-folder');
@@ -543,7 +544,7 @@
                     checkDirty();
                     schedulePreview();
 
-                    fetch('/api/upload-image', {
+                    fetch(basePath + '/api/upload-image', {
                         method: 'POST',
                         body: formData,
                     })
@@ -657,7 +658,7 @@
                 btn.classList.add('opacity-50');
                 icon.classList.add('animate-spin');
 
-                fetch('/api/sync', { method: 'POST' })
+                fetch(basePath + '/api/sync', { method: 'POST' })
                     .then(r => r.json())
                     .then(data => {
                         if (data.success) {
