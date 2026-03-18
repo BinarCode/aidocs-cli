@@ -1259,6 +1259,11 @@ def ui(
         "--reconfigure",
         help="Re-run the setup prompts even if config exists.",
     ),
+    base_path: str = typer.Option(
+        "",
+        "--base-path",
+        help="Base URL path when served behind a reverse proxy (e.g. /admin/docs).",
+    ),
 ) -> None:
     """Launch the web-based docs editor UI.
 
@@ -1350,6 +1355,9 @@ def ui(
     from .ui.app import create_app
 
     full_repo = f"{github_owner}/{github_repo}"
+    # Strip trailing slash from base_path
+    base_path = base_path.rstrip("/")
+
     fastapi_app = create_app(
         docs_dir=target_dir.resolve(),
         github_token=github_token,
@@ -1357,6 +1365,7 @@ def ui(
         base_branch=github_branch,
         media_path=media_path or None,
         docs_prefix=docs_path,
+        base_path=base_path,
     )
 
     url = f"http://{host}:{port}"
