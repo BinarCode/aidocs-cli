@@ -375,6 +375,69 @@ COMMIT;
 psql $DATABASE_URL -f docs/.chunks/sync.sql
 ```
 
+### `aidocs ui`
+
+Launch a web-based documentation editor with a visual markdown editor, file tree, live preview, and GitHub PR integration.
+
+![aidocs ui](docs/aidocs-ui.png)
+
+```bash
+aidocs ui                      # First run: interactive setup, then serve
+aidocs ui                      # Next runs: just serve (config saved)
+aidocs ui --reconfigure        # Re-run setup prompts
+aidocs ui --port 3000          # Custom port
+aidocs ui --no-open            # Don't auto-open browser
+```
+
+**First run prompts:**
+```
+GitHub token: ****
+GitHub owner (org or user): myorg
+GitHub repository name: myrepo
+Base branch [main]: stage
+Docs path (e.g. website/docs): website/docs
+Media path for image uploads: website/public/docs-media
+```
+
+Configuration is saved to `aidocs-config.yml` under the `ui:` key. Subsequent runs skip prompts entirely.
+
+**Options:**
+| Option | Description |
+|--------|-------------|
+| `--port, -p` | Port to serve on (default: 8377) |
+| `--host` | Host to bind to (default: 127.0.0.1) |
+| `--open/--no-open` | Open browser automatically (default: --open) |
+| `--reconfigure` | Re-run setup prompts even if config exists |
+
+**Features:**
+- File tree sidebar with search and folder navigation
+- Markdown editor with live preview and split view
+- SEO metadata fields (title, description, keywords, published, noindex)
+- Published/Draft status visible in the file tree
+- Image upload via drag & drop, paste, or file picker
+- Creates GitHub pull requests for all changes (create, update, delete)
+- Sync button to pull latest changes from the remote branch
+- Fullscreen editing mode
+
+**Installation:**
+```bash
+# Install with UI extras
+uv tool install 'aidocs[ui]'
+
+# Or for development
+uv pip install -e '.[ui]'
+```
+
+**Environment variables** (alternative to config file):
+| Variable | Description |
+|----------|-------------|
+| `DOCS_EDITOR_GITHUB_TOKEN` | GitHub personal access token |
+| `DOCS_EDITOR_GITHUB_OWNER` | GitHub repository owner |
+| `DOCS_EDITOR_GITHUB_REPO` | GitHub repository name |
+| `DOCS_EDITOR_GITHUB_BRANCH` | Base branch for PRs |
+| `DOCS_EDITOR_DOCS_PATH` | Path to docs directory |
+| `DOCS_EDITOR_MEDIA_PATH` | Path for media uploads |
+
 ### `aidocs serve`
 
 Serve documentation with live reload using MkDocs Material theme.
@@ -1238,8 +1301,13 @@ Add to your `~/.claude.json` or project `.mcp.json`:
 ```bash
 git clone https://github.com/binarcode/aidocs-cli.git
 cd aidocs-cli
-uv venv && uv pip install -e .
+uv venv && uv pip install -e '.[ui,test]'
 aidocs check
+```
+
+**Running tests:**
+```bash
+pytest tests/ -v
 ```
 
 ## License
