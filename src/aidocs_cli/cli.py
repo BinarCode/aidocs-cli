@@ -1,5 +1,6 @@
 """CLI commands for aidocs."""
 
+import os
 import shutil
 import subprocess
 import sys
@@ -7,6 +8,7 @@ from pathlib import Path
 from typing import Optional
 
 import typer
+import yaml
 from rich.console import Console
 from rich.panel import Panel
 
@@ -1193,6 +1195,186 @@ def coverage(
     except Exception as e:
         console.print(f"[red]Error: {e}[/red]")
         raise typer.Exit(1)
+
+
+CONFIG_CANDIDATES = ["docs/aidocs-config.yml", "aidocs-config.yml"]
+
+
+def _find_config_path() -> Path:
+    """Find the aidocs-config.yml, preferring docs/ subfolder."""
+    for candidate in CONFIG_CANDIDATES:
+        path = Path.cwd() / candidate
+        if path.exists():
+            return path
+    # Default: create in docs/ if that dir exists, else root
+    docs_dir = Path.cwd() / "docs"
+    if docs_dir.is_dir():
+        return docs_dir / "aidocs-config.yml"
+    return Path.cwd() / "aidocs-config.yml"
+
+
+def _load_ui_config() -> dict:
+    """Load UI config from aidocs-config.yml if it exists."""
+    config_path = _find_config_path()
+    if not config_path.exists():
+        return {}
+    try:
+        data = yaml.safe_load(config_path.read_text()) or {}
+        return data.get("ui", {})
+    except Exception:
+        return {}
+
+
+def _save_ui_config(config: dict) -> None:
+    """Save UI config to aidocs-config.yml, preserving other keys."""
+    config_path = _find_config_path()
+    try:
+        existing = yaml.safe_load(config_path.read_text()) or {} if config_path.exists() else {}
+    except Exception:
+        existing = {}
+    existing["ui"] = config
+    config_path.write_text(yaml.dump(existing, default_flow_style=False, sort_keys=False))
+
+
+@app.command()
+def ui(
+    port: int = typer.Option(
+        8377,
+        "--port",
+        "-p",
+        help="Port to serve the editor on.",
+    ),
+    host: str = typer.Option(
+        "127.0.0.1",
+        "--host",
+        help="Host to bind to.",
+    ),
+    open_browser: bool = typer.Option(
+        True,
+        "--open/--no-open",
+        help="Open browser automatically.",
+    ),
+    reconfigure: bool = typer.Option(
+        False,
+        "--reconfigure",
+        help="Re-run the setup prompts even if config exists.",
+    ),
+) -> None:
+    """Launch the web-based docs editor UI.
+
+    On first run, prompts for GitHub token, repo, branch, docs path, and
+    media path. Saves configuration to aidocs-config.yml so subsequent
+    runs just spin up the server instantly.
+
+    Examples:
+        aidocs ui                  # First run: setup, then serve
+        aidocs ui                  # Next runs: just serve
+        aidocs ui --reconfigure    # Re-run setup prompts
+        aidocs ui --port 3000      # Custom port
+        aidocs ui --no-open        # Don't open browser
+    """
+    import threading
+    import webbrowser
+
+    # Load saved config
+    saved = _load_ui_config()
+    needs_setup = reconfigure or not all(saved.get(k) for k in ["github_token", "github_owner", "github_repo", "docs_path"])
+
+    if needs_setup:
+        console.print("[blue]Docs Editor setup[/blue]\n")
+
+        github_token = typer.prompt(
+            "GitHub token",
+            default=saved.get("github_token", ""),
+            hide_input=True,
+        )
+        github_owner = typer.prompt(
+            "GitHub owner (org or user)",
+            default=saved.get("github_owner", ""),
+        )
+        github_repo = typer.prompt(
+            "GitHub repository name",
+            default=saved.get("github_repo", ""),
+        )
+        github_branch = typer.prompt(
+            "Base branch",
+            default=saved.get("github_branch", "main"),
+        )
+        docs_path = typer.prompt(
+            "Docs path (e.g. website/docs)",
+            default=saved.get("docs_path", "docs"),
+        )
+        media_path = typer.prompt(
+            "Media path for image uploads (leave empty to skip)",
+            default=saved.get("media_path", ""),
+        )
+
+        config = {
+            "github_token": github_token,
+            "github_owner": github_owner,
+            "github_repo": github_repo,
+            "github_branch": github_branch,
+            "docs_path": docs_path,
+            "media_path": media_path,
+        }
+        _save_ui_config(config)
+        console.print(f"\n[green]Config saved to {_find_config_path()}[/green]\n")
+    else:
+        github_token = saved["github_token"]
+        github_owner = saved["github_owner"]
+        github_repo = saved["github_repo"]
+        github_branch = saved.get("github_branch", "main")
+        docs_path = saved["docs_path"]
+        media_path = saved.get("media_path", "")
+
+    target_dir = Path(docs_path)
+
+    is_valid, error_msg = validate_docs_directory(target_dir)
+    if not is_valid:
+        console.print(Panel.fit(
+            f"[red]{error_msg}[/red]",
+            title="Error",
+            border_style="red",
+        ))
+        raise typer.Exit(1)
+
+    try:
+        import uvicorn
+    except ImportError:
+        console.print(
+            "[red]Error: uvicorn and fastapi are required for the UI.[/red]\n"
+            "Install them with: [cyan]pip install 'aidocs[ui]'[/cyan]"
+        )
+        raise typer.Exit(1)
+
+    from .ui.app import create_app
+
+    full_repo = f"{github_owner}/{github_repo}"
+    fastapi_app = create_app(
+        docs_dir=target_dir.resolve(),
+        github_token=github_token,
+        github_repo=full_repo,
+        base_branch=github_branch,
+        media_path=media_path or None,
+        docs_prefix=docs_path,
+    )
+
+    url = f"http://{host}:{port}"
+    console.print(Panel.fit(
+        f"[green]Docs Editor running at:[/green] [bold cyan]{url}[/bold cyan]\n\n"
+        f"[dim]Docs directory:[/dim] {target_dir.resolve()}\n"
+        f"[dim]GitHub repo:[/dim]    {full_repo}\n"
+        f"[dim]Base branch:[/dim]    {github_branch}\n"
+        + (f"[dim]Media path:[/dim]     {media_path}\n" if media_path else "")
+        + "\n[dim]Press Ctrl+C to stop[/dim]",
+        title="aidocs ui",
+        border_style="blue",
+    ))
+
+    if open_browser:
+        threading.Timer(1.5, lambda: webbrowser.open(url)).start()
+
+    uvicorn.run(fastapi_app, host=host, port=port, log_level="warning")
 
 
 if __name__ == "__main__":
