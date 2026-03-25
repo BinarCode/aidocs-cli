@@ -1,6 +1,8 @@
 """AI-powered documentation generator CLI for Claude Code projects."""
 
-__version__ = "0.20.0"
+from importlib.metadata import version
+
+__version__ = version("aidocs")
 
 from .cli import app
 
