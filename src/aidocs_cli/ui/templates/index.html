@@ -17,6 +17,13 @@
             transition: border-color 0.15s, box-shadow 0.15s;
             background: #fff;
         }
+        select {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 0.5rem center;
+            padding-right: 2rem;
+        }
         input[type="text"]:focus, textarea:focus, select:focus {
             outline: none;
             border-color: #3b82f6;
@@ -34,11 +41,20 @@
                 <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                 <a href="{{ base_path }}/" class="text-base font-semibold text-gray-800">Docs Editor</a>
             </div>
-            <button type="button" id="sync-btn"
-                    class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition">
-                <svg class="w-3.5 h-3.5" id="sync-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-                Sync
-            </button>
+            <div class="flex items-center gap-2">
+                <button type="button" id="sync-btn"
+                        class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition">
+                    <svg class="w-3.5 h-3.5" id="sync-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                    Sync
+                </button>
+                <form action="{{ base_path }}/api/publish" method="POST" id="publish-form" class="inline">
+                    <button type="submit" id="publish-btn"
+                            class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition shadow-sm">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"/></svg>
+                        Publish
+                    </button>
+                </form>
+            </div>
         </div>
     </nav>
 
@@ -92,20 +108,25 @@
                     <input type="hidden" name="uploaded_images" id="f-uploaded-images">
 
                     <!-- Header -->
-                    <div class="bg-white rounded-t-xl border border-gray-200 px-5 py-3 flex items-center justify-between shadow-sm">
-                        <div class="min-w-0 mr-4">
-                            <h2 class="text-sm font-semibold text-gray-800 truncate capitalize" id="editor-title"></h2>
-                            <p class="text-xs text-gray-400 font-mono truncate mt-0.5" id="editor-path"></p>
+                    <div class="bg-white rounded-t-xl border border-gray-200 px-5 py-3 shadow-sm">
+                        <div class="flex items-center justify-between">
+                            <div class="min-w-0 mr-4">
+                                <h2 class="text-sm font-semibold text-gray-800 truncate capitalize" id="editor-title"></h2>
+                                <p class="text-xs text-gray-400 font-mono truncate mt-0.5" id="editor-path"></p>
+                            </div>
+                            <div class="flex gap-2 flex-shrink-0">
+                                <button type="button" id="delete-btn"
+                                        class="px-3 py-1.5 text-xs border border-red-200 text-red-600 rounded-lg hover:bg-red-50 transition font-medium">
+                                    Delete
+                                </button>
+                                <button type="submit" id="submit-edit-btn" disabled
+                                        class="px-4 py-1.5 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium shadow-sm disabled:opacity-40 disabled:cursor-not-allowed">
+                                    Save
+                                </button>
+                            </div>
                         </div>
-                        <div class="flex gap-2 flex-shrink-0">
-                            <button type="button" id="delete-btn"
-                                    class="px-3 py-1.5 text-xs border border-red-200 text-red-600 rounded-lg hover:bg-red-50 transition font-medium">
-                                Delete
-                            </button>
-                            <button type="submit" id="submit-edit-btn" disabled
-                                    class="px-4 py-1.5 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium shadow-sm disabled:opacity-40 disabled:cursor-not-allowed">
-                                Create PR
-                            </button>
+                        <!-- Language tabs -->
+                        <div id="lang-tabs" class="hidden mt-3 flex items-center gap-1 bg-gray-100 rounded-lg p-0.5 w-fit">
                         </div>
                     </div>
 
@@ -196,7 +217,7 @@
                             </button>
                             <button type="submit"
                                     class="px-4 py-1.5 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium shadow-sm">
-                                Create PR
+                                Save
                             </button>
                         </div>
                     </div>
@@ -377,8 +398,34 @@
                 }
             });
 
-            document.getElementById('edit-form').addEventListener('submit', function () {
-                isDirty = false;
+            document.getElementById('edit-form').addEventListener('submit', function (e) {
+                e.preventDefault();
+                const form = this;
+                const btn = document.getElementById('submit-edit-btn');
+                btn.disabled = true;
+                btn.textContent = 'Saving...';
+
+                fetch(form.action, {
+                    method: 'POST',
+                    body: new FormData(form),
+                })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        storeOriginals();
+                        btn.textContent = 'Saved';
+                        setTimeout(() => { btn.textContent = 'Save'; }, 1500);
+                    } else {
+                        alert('Save failed: ' + (data.error || 'Unknown error'));
+                        btn.textContent = 'Save';
+                        btn.disabled = false;
+                    }
+                })
+                .catch(err => {
+                    alert('Save failed: ' + err.message);
+                    btn.textContent = 'Save';
+                    btn.disabled = false;
+                });
             });
             document.getElementById('create-form').addEventListener('submit', function () {
                 isDirty = false;
@@ -417,9 +464,12 @@
                     document.querySelectorAll('.tree-file').forEach(f => f.classList.remove('bg-blue-50', 'text-blue-700', 'font-semibold'));
                     this.classList.add('bg-blue-50', 'text-blue-700', 'font-semibold');
 
+                    const pagePath = this.dataset.path;
+                    currentBasePath = pagePath;
+                    currentLang = '';
                     showPanel('loading-state');
 
-                    fetch(basePath + '/api/edit?path=' + encodeURIComponent(this.dataset.path), {
+                    fetch(basePath + '/api/edit?path=' + encodeURIComponent(pagePath), {
                         headers: { 'Accept': 'application/json' }
                     })
                     .then(r => r.json())
@@ -434,10 +484,17 @@
                         document.getElementById('editor-title').textContent = data.path.split('/').pop().replace('.md', '').replaceAll('-', ' ');
                         document.getElementById('editor-path').textContent = data.path;
 
+                        // Set current lang to default
+                        currentLang = cachedLangs.length ? cachedLangs[0] : '';
+                        setEditorDirection(currentLang);
+
                         resetUploadedImages();
                         switchTab(currentTab);
                         storeOriginals();
                         showPanel('edit-form');
+
+                        // Load language tabs
+                        loadLangTabs(pagePath);
                     })
                     .catch(err => {
                         showPanel('empty-state');
@@ -455,6 +512,119 @@
                 isDirty = false;
                 document.getElementById('d-path').value = path;
                 document.getElementById('delete-form').submit();
+            });
+
+            let currentBasePath = ''; // The default-lang page path currently being edited
+            let currentLang = '';
+            let translationsCache = {};
+            let cachedLangs = [];
+            let rtlLangs = [];
+
+            // Fetch languages on load
+            fetch(basePath + '/api/languages', { headers: { 'Accept': 'application/json' } })
+                .then(r => r.json())
+                .then(data => { cachedLangs = data.languages || []; rtlLangs = data.rtl || []; });
+
+            function setEditorDirection(lang) {
+                const isRtl = rtlLangs.includes(lang);
+                const dir = isRtl ? 'rtl' : 'ltr';
+                document.getElementById('f-content').dir = dir;
+                document.getElementById('preview-pane').dir = dir;
+                document.getElementById('f-content').style.textAlign = isRtl ? 'right' : 'left';
+            }
+
+            function loadLangTabs(pagePath) {
+                const tabsContainer = document.getElementById('lang-tabs');
+                fetch(basePath + '/api/translations?path=' + encodeURIComponent(pagePath), {
+                    headers: { 'Accept': 'application/json' }
+                })
+                .then(r => r.json())
+                .then(data => {
+                    translationsCache = data.translations || {};
+                    const langs = Object.keys(translationsCache);
+                    if (langs.length < 2) {
+                        tabsContainer.classList.add('hidden');
+                        return;
+                    }
+                    tabsContainer.classList.remove('hidden');
+                    tabsContainer.innerHTML = '';
+                    langs.forEach(function (lang) {
+                        const info = translationsCache[lang];
+                        const btn = document.createElement('button');
+                        btn.type = 'button';
+                        btn.className = 'lang-tab px-3 py-1 text-[11px] font-medium rounded-md transition';
+                        btn.dataset.lang = lang;
+                        btn.dataset.path = info.path;
+                        btn.textContent = lang.toUpperCase();
+                        if (!info.exists) {
+                            btn.textContent += ' +';
+                            btn.title = 'Create ' + lang.toUpperCase() + ' translation';
+                        }
+                        tabsContainer.appendChild(btn);
+                    });
+                    highlightLangTab(currentLang);
+                });
+            }
+
+            function highlightLangTab(lang) {
+                document.querySelectorAll('.lang-tab').forEach(function (btn) {
+                    btn.classList.remove('bg-white', 'text-gray-700', 'shadow-sm');
+                    btn.classList.add('text-gray-500');
+                    if (btn.dataset.lang === lang) {
+                        btn.classList.add('bg-white', 'text-gray-700', 'shadow-sm');
+                        btn.classList.remove('text-gray-500');
+                    }
+                });
+            }
+
+            function loadPageForLang(lang) {
+                const info = translationsCache[lang];
+                if (!info) return;
+                currentLang = lang;
+                highlightLangTab(lang);
+
+                setEditorDirection(lang);
+
+                if (info.exists) {
+                    fetch(basePath + '/api/edit?path=' + encodeURIComponent(info.path), {
+                        headers: { 'Accept': 'application/json' }
+                    })
+                    .then(r => r.json())
+                    .then(data => {
+                        document.getElementById('f-path').value = data.path;
+                        document.getElementById('f-title').value = data.title || '';
+                        document.getElementById('f-description').value = data.description || '';
+                        document.getElementById('f-keywords').value = data.keywords || '';
+                        document.getElementById('f-noindex').checked = !!data.noindex;
+                        document.getElementById('f-published').checked = !!data.published;
+                        document.getElementById('f-content').value = data.content;
+                        document.getElementById('editor-path').textContent = data.path;
+                        resetUploadedImages();
+                        switchTab(currentTab);
+                        storeOriginals();
+                    });
+                } else {
+                    // New translation — empty editor, set path for saving
+                    document.getElementById('f-path').value = info.path;
+                    document.getElementById('f-title').value = '';
+                    document.getElementById('f-description').value = '';
+                    document.getElementById('f-keywords').value = '';
+                    document.getElementById('f-noindex').checked = false;
+                    document.getElementById('f-published').checked = false;
+                    document.getElementById('f-content').value = '';
+                    document.getElementById('editor-path').textContent = info.path + ' (new)';
+                    resetUploadedImages();
+                    switchTab(currentTab);
+                    storeOriginals();
+                    setDirty(false);
+                }
+            }
+
+            document.addEventListener('click', function (e) {
+                const tab = e.target.closest('.lang-tab');
+                if (!tab) return;
+                if (isDirty && !confirm('You have unsaved changes. Discard?')) return;
+                loadPageForLang(tab.dataset.lang);
             });
 
             // New Page

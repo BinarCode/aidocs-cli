@@ -1313,6 +1313,11 @@ def ui(
             "Media path for image uploads (leave empty to skip)",
             default=saved.get("media_path", ""),
         )
+        languages_str = typer.prompt(
+            "Languages (comma-separated, e.g. en,es,ro — leave empty for none)",
+            default=",".join(saved.get("languages", [])),
+        )
+        languages = [l.strip() for l in languages_str.split(",") if l.strip()] if languages_str.strip() else []
 
         config = {
             "github_token": github_token,
@@ -1321,6 +1326,7 @@ def ui(
             "github_branch": github_branch,
             "docs_path": docs_path,
             "media_path": media_path,
+            "languages": languages,
         }
         _save_ui_config(config)
         console.print(f"\n[green]Config saved to {_find_config_path()}[/green]\n")
@@ -1331,6 +1337,7 @@ def ui(
         github_branch = saved.get("github_branch", "main")
         docs_path = saved["docs_path"]
         media_path = saved.get("media_path", "")
+        languages = saved.get("languages", [])
 
     target_dir = Path(docs_path)
 
@@ -1366,6 +1373,7 @@ def ui(
         media_path=media_path or None,
         docs_prefix=docs_path,
         base_path=base_path,
+        languages=languages,
     )
 
     url = f"http://{host}:{port}"
