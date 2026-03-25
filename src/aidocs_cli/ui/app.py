@@ -37,6 +37,7 @@ def create_app(
     media_path: str | None = None,
     docs_prefix: str | None = None,
     base_path: str = "",
+    languages: list[str] | None = None,
 ) -> FastAPI:
     """Create and configure the FastAPI application."""
     owner, repo = github_repo.split("/", 1)
@@ -61,9 +62,21 @@ def create_app(
             return f"{docs_prefix.rstrip('/')}/{local_path}"
         return local_path
 
+    def _is_translation(name: str) -> bool:
+        """Check if filename has a language suffix like .he.md, .ro.md."""
+        if not languages or len(languages) < 2:
+            return False
+        for lang in languages[1:]:
+            if name.endswith(f".{lang}.md"):
+                return True
+        return False
+
     def _build_tree_html(docs: list[dict]) -> str:
         tree: dict = {}
         for doc in docs:
+            # Skip translation files in sidebar
+            if _is_translation(doc["name"]):
+                continue
             parts = doc["path"].split("/")
             current = tree
             for i, part in enumerate(parts):
@@ -101,17 +114,23 @@ def create_app(
         file_padding = padding + 20
 
         for file in files:
-            display_name = file["name"].replace("-", " ").removesuffix(".md")
+            name = file["name"]
             escaped_path = html.escape(file["path"])
             published = file.get("published", False)
+            display_name = name.replace("-", " ").removesuffix(".md")
             text_color = "text-gray-600" if published else "text-gray-400"
             icon_color = "text-gray-400" if published else "text-gray-300"
+            status_icon = (
+                '<span class="flex-shrink-0" title="Published"><svg class="w-3 h-3 text-green-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg></span>'
+                if published else
+                '<span class="flex-shrink-0" title="Draft"><svg class="w-3 h-3 text-orange-400" fill="currentColor" viewBox="0 0 20 20"><circle cx="10" cy="10" r="4"/></svg></span>'
+            )
+
             result += "<li>"
             result += f'<a href="#" class="tree-file flex items-center gap-1.5 px-2 py-1 rounded-md hover:bg-blue-50 hover:text-blue-700 {text_color} transition" style="padding-left: {file_padding}px" data-path="{escaped_path}">'
             result += f'<svg class="w-3.5 h-3.5 {icon_color} flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>'
             result += f'<span class="text-xs truncate">{html.escape(display_name)}</span>'
-            if not published:
-                result += '<span class="text-[9px] font-medium text-orange-400 uppercase tracking-wide flex-shrink-0">Draft</span>'
+            result += status_icon
             result += "</a>"
             result += "</li>"
 
@@ -176,6 +195,58 @@ def create_app(
         folders = list_folders(docs_dir)
         return JSONResponse({"folders": folders})
 
+    @app.get("/api/languages")
+    async def api_languages():
+        return JSONResponse({"languages": languages or []})
+
+    @app.get("/api/translations")
+    async def api_translations(path: str = Query(...)):
+        """Given a default-lang page path, return which translations exist."""
+        if not languages or len(languages) < 2:
+            return JSONResponse({"translations": {}})
+
+        stem = Path(path).stem  # e.g. "billing"
+        parent = str(Path(path).parent)  # e.g. "account-and-billing/manage-your-account-and-billing"
+
+        result = {}
+        for lang in languages:
+            if lang == languages[0]:
+                # Default lang = the file itself
+                full = docs_dir / path
+                result[lang] = {"exists": full.exists(), "path": path}
+            else:
+                lang_filename = f"{stem}.{lang}.md"
+                lang_path = f"{parent}/{lang_filename}" if parent != "." else lang_filename
+                full = docs_dir / lang_path
+                result[lang] = {"exists": full.exists(), "path": lang_path}
+
+        return JSONResponse({"translations": result})
+
+    @app.get("/api/default-pages")
+    async def api_default_pages():
+        """List default-language pages (no lang suffix) for translation source."""
+        if not languages:
+            return JSONResponse({"pages": []})
+        docs = list_docs(docs_dir)
+        non_default_suffixes = [f".{lang}.md" for lang in languages[1:]]
+        pages = []
+        for doc in docs:
+            # Skip non-default language files
+            if any(doc["name"].endswith(s) for s in non_default_suffixes):
+                continue
+            # stem without .md
+            stem = doc["name"].removesuffix(".md")
+            folder = str(Path(doc["path"]).parent)
+            if folder == ".":
+                folder = ""
+            pages.append({
+                "path": doc["path"],
+                "stem": stem,
+                "folder": folder,
+                "title": stem.replace("-", " ").title(),
+            })
+        return JSONResponse({"pages": pages})
+
     @app.post("/api/store")
     async def api_store(request: Request):
         form = await request.form()
@@ -204,9 +275,7 @@ def create_app(
 
         try:
             write_file(docs_dir, path, file_content)
-            image_paths = [p for p in (form.get("uploaded_images", "") or "").split(",") if p]
-            pr_url = github.create_pr_for_new_file(_repo_path(path), file_content, commit_msg, image_paths, docs_dir)
-            _flash(request, "success", f'File created and PR opened: <a href="{pr_url}" target="_blank" class="underline font-medium">{pr_url}</a>')
+            _flash(request, "success", f"Page saved: {path}")
         except Exception as e:
             _flash(request, "error", f"Failed: {e}")
 
@@ -238,12 +307,10 @@ def create_app(
         commit_msg = f"docs({section}): update {basename}" if section else f"docs: update {basename}"
 
         try:
-            image_paths = [p for p in (form.get("uploaded_images", "") or "").split(",") if p]
-            pr_url = github.create_pr_for_update(_repo_path(path), file_content, commit_msg, image_paths, docs_dir)
             write_file(docs_dir, path, file_content)
-            _flash(request, "success", f'PR created: <a href="{pr_url}" target="_blank" class="underline font-medium">{pr_url}</a>')
+            _flash(request, "success", f"Page saved: {path}")
         except Exception as e:
-            _flash(request, "error", f"Failed to create PR: {e}")
+            _flash(request, "error", f"Failed to save: {e}")
 
         return RedirectResponse(f"{base_path}/", status_code=303)
 
@@ -264,6 +331,98 @@ def create_app(
             _flash(request, "success", f'Delete PR created: <a href="{pr_url}" target="_blank" class="underline font-medium">{pr_url}</a>')
         except Exception as e:
             _flash(request, "error", f"Failed to create delete PR: {e}")
+
+        return RedirectResponse(f"{base_path}/", status_code=303)
+
+    @app.get("/api/changes")
+    async def api_changes():
+        """List files with local changes (git diff)."""
+        repo_root = docs_dir
+        while repo_root != repo_root.parent:
+            if (repo_root / ".git").exists():
+                break
+            repo_root = repo_root.parent
+        else:
+            return JSONResponse({"changes": []})
+
+        try:
+            result = subprocess.run(
+                ["git", "diff", "--name-only", "HEAD", "--", str(docs_dir)],
+                cwd=str(repo_root),
+                capture_output=True,
+                text=True,
+                timeout=10,
+            )
+            untracked = subprocess.run(
+                ["git", "ls-files", "--others", "--exclude-standard", "--", str(docs_dir)],
+                cwd=str(repo_root),
+                capture_output=True,
+                text=True,
+                timeout=10,
+            )
+            changed = [f for f in result.stdout.strip().splitlines() if f]
+            new = [f for f in untracked.stdout.strip().splitlines() if f]
+            return JSONResponse({"changes": changed + new})
+        except Exception:
+            return JSONResponse({"changes": []})
+
+    @app.post("/api/publish")
+    async def api_publish(request: Request):
+        """Create a single PR with all local changes."""
+        repo_root = docs_dir
+        while repo_root != repo_root.parent:
+            if (repo_root / ".git").exists():
+                break
+            repo_root = repo_root.parent
+        else:
+            _flash(request, "error", "Not a git repository")
+            return RedirectResponse(f"{base_path}/", status_code=303)
+
+        try:
+            # Get changed + untracked files
+            result = subprocess.run(
+                ["git", "diff", "--name-only", "HEAD", "--", str(docs_dir)],
+                cwd=str(repo_root),
+                capture_output=True, text=True, timeout=10,
+            )
+            untracked = subprocess.run(
+                ["git", "ls-files", "--others", "--exclude-standard", "--", str(docs_dir)],
+                cwd=str(repo_root),
+                capture_output=True, text=True, timeout=10,
+            )
+            changed = [f for f in result.stdout.strip().splitlines() if f]
+            new = [f for f in untracked.stdout.strip().splitlines() if f]
+            all_files = list(set(changed + new))
+
+            if not all_files:
+                _flash(request, "error", "No local changes to publish")
+                return RedirectResponse(f"{base_path}/", status_code=303)
+
+            # Build file list for batch PR
+            files = []
+            for file_path in all_files:
+                full = repo_root / file_path
+                if not full.exists() or not full.suffix == ".md":
+                    continue
+                content = full.read_text(encoding="utf-8")
+                # Try to get existing file SHA from GitHub
+                sha = None
+                try:
+                    sha = github._get_file_sha(file_path)
+                except Exception:
+                    pass
+                files.append({"path": file_path, "content": content, "sha": sha})
+
+            if not files:
+                _flash(request, "error", "No doc changes to publish")
+                return RedirectResponse(f"{base_path}/", status_code=303)
+
+            count = len(files)
+            commit_msg = f"docs: update {count} page{'s' if count > 1 else ''}"
+            pr_url = github.create_pr_for_batch(files, commit_msg)
+            _flash(request, "success", f'PR created with {count} change{"s" if count > 1 else ""}: <a href="{pr_url}" target="_blank" class="underline font-medium">{pr_url}</a>')
+        except Exception as e:
+            _flash(request, "error", f"Publish failed: {e}")
 
         return RedirectResponse(f"{base_path}/", status_code=303)
 

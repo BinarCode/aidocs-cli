@@ -152,6 +152,23 @@ class GitHubService:
         self._commit_file(branch, path, content, commit_message)
         return self._open_pull_request(branch, commit_message)
 
+    def create_pr_for_batch(
+        self,
+        files: list[dict],
+        commit_message: str,
+    ) -> str:
+        """Create a PR with multiple file changes.
+
+        files: list of {"path": str, "content": str, "sha": str | None}
+        """
+        branch = f"docs/batch-{self._timestamp()}"
+        self._create_branch(branch)
+        for f in files:
+            self._commit_file(
+                branch, f["path"], f["content"], commit_message, sha=f.get("sha")
+            )
+        return self._open_pull_request(branch, commit_message)
+
     def create_pr_for_delete(self, path: str, commit_message: str) -> str:
         slug = self._slugify(Path(path).stem)
         branch = f"docs/delete-{slug}-{self._timestamp()}"
