@@ -459,7 +459,8 @@
                         document.getElementById('editor-path').textContent = data.path;
 
                         // Set current lang to default
-                        currentLang = (typeof cachedLangs !== 'undefined' && cachedLangs.length) ? cachedLangs[0] : '';
+                        currentLang = cachedLangs.length ? cachedLangs[0] : '';
+                        setEditorDirection(currentLang);
 
                         resetUploadedImages();
                         switchTab(currentTab);
@@ -491,11 +492,20 @@
             let currentLang = '';
             let translationsCache = {};
             let cachedLangs = [];
+            let rtlLangs = [];
 
             // Fetch languages on load
             fetch(basePath + '/api/languages', { headers: { 'Accept': 'application/json' } })
                 .then(r => r.json())
-                .then(data => { cachedLangs = data.languages || []; });
+                .then(data => { cachedLangs = data.languages || []; rtlLangs = data.rtl || []; });
+
+            function setEditorDirection(lang) {
+                const isRtl = rtlLangs.includes(lang);
+                const dir = isRtl ? 'rtl' : 'ltr';
+                document.getElementById('f-content').dir = dir;
+                document.getElementById('preview-pane').dir = dir;
+                document.getElementById('f-content').style.textAlign = isRtl ? 'right' : 'left';
+            }
 
             function loadLangTabs(pagePath) {
                 const tabsContainer = document.getElementById('lang-tabs');
@@ -546,6 +556,8 @@
                 if (!info) return;
                 currentLang = lang;
                 highlightLangTab(lang);
+
+                setEditorDirection(lang);
 
                 if (info.exists) {
                     fetch(basePath + '/api/edit?path=' + encodeURIComponent(info.path), {

@@ -29,6 +29,9 @@ from .github_service import GitHubService
 TEMPLATE_DIR = Path(__file__).parent / "templates"
 
 
+RTL_LANGUAGES = {"he", "ar", "fa", "ur", "yi"}
+
+
 def create_app(
     docs_dir: Path,
     github_token: str,
@@ -197,7 +200,9 @@ def create_app(
 
     @app.get("/api/languages")
     async def api_languages():
-        return JSONResponse({"languages": languages or []})
+        langs = languages or []
+        rtl = [l for l in langs if l in RTL_LANGUAGES]
+        return JSONResponse({"languages": langs, "rtl": rtl})
 
     @app.get("/api/translations")
     async def api_translations(path: str = Query(...)):
@@ -211,14 +216,13 @@ def create_app(
         result = {}
         for lang in languages:
             if lang == languages[0]:
-                # Default lang = the file itself
                 full = docs_dir / path
-                result[lang] = {"exists": full.exists(), "path": path}
+                result[lang] = {"exists": full.exists(), "path": path, "rtl": lang in RTL_LANGUAGES}
             else:
                 lang_filename = f"{stem}.{lang}.md"
                 lang_path = f"{parent}/{lang_filename}" if parent != "." else lang_filename
                 full = docs_dir / lang_path
-                result[lang] = {"exists": full.exists(), "path": lang_path}
+                result[lang] = {"exists": full.exists(), "path": lang_path, "rtl": lang in RTL_LANGUAGES}
 
         return JSONResponse({"translations": result})
 
@@ -299,6 +303,13 @@ def create_app(
             meta["noindex"] = True
         if form.get("published") == "1":
             meta["published"] = True
+
+        # Auto-set direction for RTL languages
+        if languages:
+            for lang in languages:
+                if path.endswith(f".{lang}.md") and lang in RTL_LANGUAGES:
+                    meta["direction"] = "rtl"
+                    break
 
         file_content = build_markdown(meta, content_body)
 
