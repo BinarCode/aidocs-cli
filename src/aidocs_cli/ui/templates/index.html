@@ -398,8 +398,34 @@
                 }
             });
 
-            document.getElementById('edit-form').addEventListener('submit', function () {
-                isDirty = false;
+            document.getElementById('edit-form').addEventListener('submit', function (e) {
+                e.preventDefault();
+                const form = this;
+                const btn = document.getElementById('submit-edit-btn');
+                btn.disabled = true;
+                btn.textContent = 'Saving...';
+
+                fetch(form.action, {
+                    method: 'POST',
+                    body: new FormData(form),
+                })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        storeOriginals();
+                        btn.textContent = 'Saved';
+                        setTimeout(() => { btn.textContent = 'Save'; }, 1500);
+                    } else {
+                        alert('Save failed: ' + (data.error || 'Unknown error'));
+                        btn.textContent = 'Save';
+                        btn.disabled = false;
+                    }
+                })
+                .catch(err => {
+                    alert('Save failed: ' + err.message);
+                    btn.textContent = 'Save';
+                    btn.disabled = false;
+                });
             });
             document.getElementById('create-form').addEventListener('submit', function () {
                 isDirty = false;

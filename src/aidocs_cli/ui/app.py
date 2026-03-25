@@ -319,11 +319,9 @@ def create_app(
 
         try:
             write_file(docs_dir, path, file_content)
-            _flash(request, "success", f"Page saved: {path}")
+            return JSONResponse({"success": True, "message": f"Page saved: {path}"})
         except Exception as e:
-            _flash(request, "error", f"Failed to save: {e}")
-
-        return RedirectResponse(f"{base_path}/", status_code=303)
+            return JSONResponse({"success": False, "error": str(e)}, status_code=500)
 
     @app.post("/api/delete")
     async def api_delete(request: Request):
